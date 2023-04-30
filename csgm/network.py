@@ -19,7 +19,7 @@ class Block(nn.Module):
         self.act = nn.GELU()
 
     def forward(self, x: torch.Tensor):
-        return x + self.act(self.ff(x))
+        return x + self.act(self.bn(self.ff(x)))
 
 
 class ScoreGenerativeModel(nn.Module):
@@ -35,20 +35,20 @@ class ScoreGenerativeModel(nn.Module):
         super().__init__()
 
         self.model = model
+        self.time_mlp = Embedding(emb_size, time_emb)
+        self.input_mlp = Embedding(emb_size, input_emb, scale=25.0)
+
+        concat_size = (input_size * len(self.input_mlp.layer) +
+                       len(self.time_mlp.layer))
         if model == "mlp":
-            self.time_mlp = Embedding(emb_size, time_emb)
-            self.input_mlp = Embedding(emb_size, input_emb, scale=25.0)
-
-            concat_size = (input_size * len(self.input_mlp.layer) +
-                           len(self.time_mlp.layer))
-
             layers = [nn.Linear(concat_size, hidden_dim), nn.GELU()]
             for _ in range(nlayers):
                 layers.append(Block(hidden_dim))
             layers.append(nn.Linear(hidden_dim, input_size))
             self.network = nn.Sequential(*layers)
-        elif model_type == "fno":
-            self.network = FourierNeuralOperator(1, hidden_dim, nlayers)
+        elif model == "fno":
+            self.network = FourierNeuralOperator(1, hidden_dim, concat_size,
+                                                 input_size, nlayers)
 
     def forward(self, x, t):
         if self.model == "mlp":
@@ -58,7 +58,9 @@ class ScoreGenerativeModel(nn.Module):
             x = torch.cat((x_emb, t_emb), dim=-1)
             x = self.network(x)
         elif self.model == "fno":
-            x = torch.cat((x, t.view(-1, 1)), dim=-1)
+            x_emb = self.input_mlp(x).reshape(x.shape[0], -1)
+            t_emb = self.time_mlp(t)
+            x = torch.cat((x_emb, t_emb), dim=-1)
             x = x.unsqueeze(1)
             # from IPython import embed; embed()
             x = self.network(x)
@@ -164,6 +166,8 @@ class FourierNeuralOperator(torch.nn.Module):
     def __init__(self,
                  modes: int,
                  lifted_dim: int,
+                 in_length: int,
+                 out_length: int,
                  num_fourier_layers: Optional[int] = 4):
         """Initializes a Fourier neural operator object.
 
@@ -180,9 +184,9 @@ class FourierNeuralOperator(torch.nn.Module):
         # Initialize linear lifting and the linear dimensionality reduction
         # operators.
         self.linear_layers = torch.nn.ModuleList([
-            torch.nn.Linear(3, self.lifted_dim),
-            torch.nn.Linear(self.lifted_dim, 128),
-            torch.nn.Linear(128, 2)
+            torch.nn.Linear(in_length, self.lifted_dim),
+            torch.nn.Linear(self.lifted_dim, 512),
+            torch.nn.Linear(512, out_length)
         ])
 
         # Initialize Fourier neural layers.
@@ -226,6 +230,7 @@ class FourierNeuralOperator(torch.nn.Module):
 
         # A loop over the Fourier neural layers.
         for j in range(self.num_fourier_layers):
+            # from IPython import embed; embed()
             # Forward pass of the Fourier layer.
             x1 = self.fourier_layers[j](x)
 

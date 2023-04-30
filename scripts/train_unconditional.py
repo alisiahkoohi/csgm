@@ -43,14 +43,22 @@ def train(args):
                             pin_memory=False)
 
     # Initialize the network that will learn the score function.
-    model = torch.jit.script(
-        ScoreGenerativeModel(input_size=args.input_size,
+    # model = torch.jit.script(
+    #     ScoreGenerativeModel(input_size=args.input_size,
+    #                          hidden_dim=args.hidden_dim,
+    #                          nlayers=args.nlayers,
+    #                          emb_size=args.emb_dim,
+    #                          time_emb=args.time_emb,
+    #                          input_emb=args.input_emb,
+    #                          model=args.model)).to(device)
+    model = ScoreGenerativeModel(input_size=args.input_size,
                              hidden_dim=args.hidden_dim,
                              nlayers=args.nlayers,
                              emb_size=args.emb_dim,
                              time_emb=args.time_emb,
                              input_emb=args.input_emb,
-                             model=args.model)).to(device)
+                             model=args.model).to(device)
+
 
     # Forward diffusion process noise scheduler.
     noise_scheduler = NoiseScheduler(nt=args.nt,
