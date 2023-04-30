@@ -1,3 +1,6 @@
+# Author: Ali Siahkoohi, alisk@rice.edu
+# Date: September 2022
+
 import torch
 from typing import Optional
 
@@ -49,9 +52,10 @@ class CustomLRScheduler(object):
         self.final_lr = final_lr
         self.gamma = gamma
 
-        # Compute the a and b values for according to `initial_lr`, `final_lr`.
-        self.b = max_step / ((final_lr / initial_lr)**(1 / gamma) - 1.0)
-        self.a = initial_lr / (self.b**gamma)
+        if self.initial_lr != self.final_lr:
+            # Compute the a and b values for according to `initial_lr`, `final_lr`.
+            self.b = max_step / ((final_lr / initial_lr)**(1 / gamma) - 1.0)
+            self.a = initial_lr / (self.b**gamma)
 
         # Initialize the step count.
         self.count = 0

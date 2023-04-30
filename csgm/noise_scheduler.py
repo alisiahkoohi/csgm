@@ -5,6 +5,7 @@ from torch.nn import functional as F
 
 
 class NoiseScheduler():
+
     def __init__(self,
                  nt=1000,
                  beta_start=0.0001,
@@ -17,12 +18,14 @@ class NoiseScheduler():
             self.betas = torch.linspace(beta_start,
                                         beta_end,
                                         nt,
-                                        dtype=torch.float32)
+                                        dtype=torch.float32,
+                                        device=device)
         elif beta_schedule == "quadratic":
             self.betas = torch.linspace(beta_start**0.5,
                                         beta_end**0.5,
                                         nt,
-                                        dtype=torch.float32)**2
+                                        dtype=torch.float32,
+                                        device=device)**2
 
         self.alphas = 1.0 - self.betas
         self.alphas_cumprod = torch.cumprod(self.alphas, axis=0)

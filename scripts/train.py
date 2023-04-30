@@ -7,7 +7,7 @@ import numpy as np
 from csgm import (NoiseScheduler, ScoreGenerativeModel)
 from csgm.utils import (get_dataset, configsdir, read_config, parse_input_args,
                         make_experiment_name, plot_toy_example_results,
-                        checkpointsdir, query_experiments)
+                        checkpointsdir, query_experiments, CustomLRScheduler, upload_results)
 
 CONFIG_FILE = 'toy_example.json'
 
@@ -43,12 +43,14 @@ def train(args):
                             pin_memory=False)
 
     # Initialize the network that will learn the score function.
-    model = ScoreGenerativeModel(input_size=args.input_size,
-                                 hidden_dim=args.hidden_dim,
-                                 nlayers=args.nlayers,
-                                 emb_size=args.emb_dim,
-                                 time_emb=args.time_emb,
-                                 input_emb=args.input_emb, model=args.model).to(device)
+    model = torch.jit.script(
+        ScoreGenerativeModel(input_size=args.input_size,
+                             hidden_dim=args.hidden_dim,
+                             nlayers=args.nlayers,
+                             emb_size=args.emb_dim,
+                             time_emb=args.time_emb,
+                             input_emb=args.input_emb,
+                             model=args.model)).to(device)
 
     # Forward diffusion process noise scheduler.
     noise_scheduler = NoiseScheduler(nt=args.nt,
@@ -57,6 +59,9 @@ def train(args):
 
     # Optimizer.
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    # Setup the learning rate scheduler.
+    scheduler = CustomLRScheduler(optimizer, args.lr, args.lr_final,
+                                  args.max_epochs)
     # Some placeholders.
     intermediate_samples = []
     train_obj = []
@@ -69,9 +74,11 @@ def train(args):
                   dynamic_ncols=True) as pb:
             for epoch in pb:
                 model.train()
+                # Update learning rate.
+                scheduler.step()
                 for x in (dataloader):
                     x0 = x[0]
-                    noise = torch.randn(x0.shape)
+                    noise = torch.randn(x0.shape, device=device)
 
                     # Randomly sample timesteps.
                     timesteps = torch.randint(0,
@@ -102,7 +109,7 @@ def train(args):
                                               len(noise_scheduler),
                                               (dset_val.shape[0], ),
                                               device=device).long()
-                    noise = torch.randn(dset_val.shape)
+                    noise = torch.randn(dset_val.shape, device=device)
                     xt = noise_scheduler.add_noise(dset_val, noise, timesteps)
                     noise_pred = model(xt, timesteps)
                     obj = (1 / dset_val.shape[0]) * torch.norm(noise_pred -
@@ -120,15 +127,16 @@ def train(args):
                 if (epoch % args.save_freq == 0
                         or epoch == args.max_epochs - 1):
                     # Sample intermediate results.
-                    timesteps = list(range(len(noise_scheduler)))[::-1]
+                    timesteps = list(
+                        torch.arange(len(noise_scheduler),
+                                     device=device,
+                                     dtype=torch.int))[::-1]
                     sample = torch.randn(args.val_batchsize,
                                          args.input_size,
                                          device=device)
                     for i, t in enumerate(tqdm(timesteps)):
-                        t = torch.from_numpy(np.repeat(
-                            t, args.val_batchsize)).long()
+                        t = t.repeat(args.val_batchsize)
                         with torch.no_grad():
-                            # from IPython import embed; embed()
                             residual = model(sample, t)
                             sample = noise_scheduler.step(
                                 residual, t[0], sample)
@@ -159,3 +167,6 @@ if '__main__' == __name__:
 
     for args in args_list:
         train(args)
+
+    # Upload results to Weights & Biases for tracking training progress.
+    upload_results(args, flag='--progress')
