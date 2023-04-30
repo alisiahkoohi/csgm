@@ -48,7 +48,7 @@ def train(args):
                                  nlayers=args.nlayers,
                                  emb_size=args.emb_dim,
                                  time_emb=args.time_emb,
-                                 input_emb=args.input_emb).to(device)
+                                 input_emb=args.input_emb, model=args.model).to(device)
 
     # Forward diffusion process noise scheduler.
     noise_scheduler = NoiseScheduler(nt=args.nt,
@@ -128,6 +128,7 @@ def train(args):
                         t = torch.from_numpy(np.repeat(
                             t, args.val_batchsize)).long()
                         with torch.no_grad():
+                            # from IPython import embed; embed()
                             residual = model(sample, t)
                             sample = noise_scheduler.step(
                                 residual, t[0], sample)

@@ -17,5 +17,6 @@
     "input_emb": "sinusoidal",
     "time_emb": "sinusoidal",
     "seed": 0,
-    "phase": "train"
+    "phase": "train",
+    "model": "mlp"
 }
