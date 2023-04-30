@@ -1,0 +1,20 @@
+name: csgm
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+  - nvidia
+dependencies:
+  - nvidia::cudatoolkit=11.6
+  - python==3.9
+  - pytorch::pytorch
+  - pip
+  - pip:
+    - matplotlib
+    - pandas
+    - numpy
+    - scikit-learn
+    - tqdm
+    - gitpython
+    - h5py
+    - seaborn
