@@ -36,12 +36,25 @@ def query_experiments(config_file, **kwargs):
     experiment_args = []
     for kwargs in list_args:
         args = make_complete_args(config_file, **kwargs)
+        args.emb_dim = [
+            int(j) for j in args.emb_dim.replace(' ', '').split(',')
+        ]
+        if not isinstance(args.input_size, int):
+            args.input_size = [
+                int(j) for j in args.input_size.replace(' ', '').split(',')
+            ]
         experiment_args.append(args)
 
     if not experiment_args:
         args = read_config(os.path.join(configsdir(), config_file))
         args = parse_input_args(args)
+        args.emb_dim = [
+            int(j) for j in args.emb_dim.replace(' ', '').split(',')
+        ]
+        if not isinstance(args.input_size, int):
+            args.input_size = [
+                int(j) for j in args.input_size.replace(' ', '').split(',')
+            ]
         experiment_args = [args]
 
     return experiment_args
-

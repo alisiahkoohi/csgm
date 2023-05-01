@@ -62,6 +62,49 @@ def dino_dataset(n=8000, device="cpu"):
     X = np.stack((x, y), axis=1)
     return torch.from_numpy(X.astype(np.float32)).to(device)
 
+# def mgan_eq_4(n=8000, device="cpu"):
+
+#     noise_dist = torch.distributions.gamma.Gamma(1.0, 1.0/0.3)
+
+#     for j in range(n):
+#         x = 6.0*torch.rand(1) - 3.0
+#         x_samples[j, :] = x.cpu().numpy()[0]
+#         y = fwd_op(x)
+#         y_samples[j, :] = y.cpu().numpy()[0]
+
+#     torch.tanh(x) + self.noise_dist.sample(x.shape)
+
+#     rng = np.random.default_rng(42)
+#     ix = rng.integers(0, len(df), n)
+#     x = df["x"].iloc[ix].tolist()
+#     x = np.array(x) + rng.normal(size=len(x)) * 0.15
+#     y = df["y"].iloc[ix].tolist()
+#     y = np.array(y) + rng.normal(size=len(x)) * 0.15
+#     x = (x / 54 - 1) * 4
+#     y = (y / 48 - 1) * 4
+#     X = np.stack((x, y), axis=1)
+#     return torch.from_numpy(X.astype(np.float32)).to(device)
+
+
+# class ForwardOperator(torch.nn.Module):
+#     """
+#     Forward operator
+#     """
+#     def __init__(self, equation=4):
+#         super(ForwardOperator, self).__init__()
+#         self.equation = equation
+#         if equation == 4 or equation == 6:
+#             self.noise_dist = torch.distributions.gamma.Gamma(1.0, 1.0/0.3)
+#         elif equation == 5:
+#             self.noise_dist = torch.distributions.normal.Normal(0., 0.05)
+#     def forward(self, x):
+#         if self.equation == 4:
+#             return torch.tanh(x) + self.noise_dist.sample(x.shape)
+#         elif self.equation == 5:
+#             return torch.tanh(x + self.noise_dist.sample(x.shape))
+#         elif self.equation == 6:
+#             return torch.tanh(x) * self.noise_dist.sample(x.shape)
+
 
 def get_dataset(name, n=8000, n_val=1024, input_size=2, device="cpu"):
     if name == "moons":

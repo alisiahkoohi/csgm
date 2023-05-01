@@ -9,7 +9,7 @@
     "lr_final": 0.001,
     "nt": 200,
     "beta_schedule": "linear",
-    "emb_dim": 128,
+    "emb_dim": "128,128",
     "input_size": 2,
     "hidden_dim": 64,
     "nlayers": 5,
@@ -19,5 +19,5 @@
     "time_emb": "sinusoidal",
     "seed": 0,
     "phase": "train",
-    "model": "mlp"
+    "model": "fno"
 }

@@ -27,4 +27,5 @@ def make_experiment_name(args):
                 'val_batchsize'
         ]:
             experiment_name += key + '-{}_'.format(value)
-    return experiment_name[:-1].replace(' ', '').replace(',', '-')
+    return experiment_name[:-1].replace('[', '').replace(']', '').replace(
+        ',', '-').replace(' ', '')

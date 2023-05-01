@@ -7,7 +7,8 @@ import numpy as np
 from csgm import (NoiseScheduler, ScoreGenerativeModel)
 from csgm.utils import (get_dataset, configsdir, read_config, parse_input_args,
                         make_experiment_name, plot_toy_example_results,
-                        checkpointsdir, query_experiments, CustomLRScheduler, upload_results)
+                        checkpointsdir, query_experiments, CustomLRScheduler,
+                        upload_results)
 
 CONFIG_FILE = 'toy_example.json'
 
@@ -43,22 +44,13 @@ def train(args):
                             pin_memory=False)
 
     # Initialize the network that will learn the score function.
-    # model = torch.jit.script(
-    #     ScoreGenerativeModel(input_size=args.input_size,
-    #                          hidden_dim=args.hidden_dim,
-    #                          nlayers=args.nlayers,
-    #                          emb_size=args.emb_dim,
-    #                          time_emb=args.time_emb,
-    #                          input_emb=args.input_emb,
-    #                          model=args.model)).to(device)
     model = ScoreGenerativeModel(input_size=args.input_size,
-                             hidden_dim=args.hidden_dim,
-                             nlayers=args.nlayers,
-                             emb_size=args.emb_dim,
-                             time_emb=args.time_emb,
-                             input_emb=args.input_emb,
-                             model=args.model).to(device)
-
+                                 hidden_dim=args.hidden_dim,
+                                 nlayers=args.nlayers,
+                                 emb_size=args.emb_dim,
+                                 time_emb=args.time_emb,
+                                 input_emb=args.input_emb,
+                                 model=args.model).to(device)
 
     # Forward diffusion process noise scheduler.
     noise_scheduler = NoiseScheduler(nt=args.nt,
@@ -172,7 +164,6 @@ def train(args):
 if '__main__' == __name__:
 
     args_list = query_experiments(CONFIG_FILE)
-
     for args in args_list:
         train(args)
 
