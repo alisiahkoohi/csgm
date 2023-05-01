@@ -4,13 +4,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 
-from csgm import (NoiseScheduler, ScoreGenerativeModel)
-from csgm.utils import (get_dataset, configsdir, read_config, parse_input_args,
-                        make_experiment_name, plot_toy_example_results,
-                        checkpointsdir, query_experiments, CustomLRScheduler,
-                        upload_results)
+from csgm import NoiseScheduler, ConditionalScoreGenerativeModel
+from csgm.utils import (get_conditional_dataset, configsdir, read_config,
+                        parse_input_args, make_experiment_name,
+                        plot_toy_conditional_example_results, checkpointsdir,
+                        query_experiments, CustomLRScheduler, upload_results)
 
-CONFIG_FILE = 'toy_example.json'
+CONFIG_FILE = 'toy_example_conditional.json'
 
 
 def train(args):
@@ -29,11 +29,11 @@ def train(args):
         device = torch.device('cpu')
 
     # Load the dataset.
-    dset_train, dset_val = get_dataset(args.dataset,
-                                       n=args.num_train,
-                                       n_val=args.val_batchsize,
-                                       input_size=args.input_size,
-                                       device=device)
+    dset_train, dset_val = get_conditional_dataset(args.dataset,
+                                                   n=args.num_train,
+                                                   n_val=args.val_batchsize,
+                                                   input_size=args.input_size,
+                                                   device=device)
     dset_val = dset_val.tensors[0]
 
     # Make the dataloaderf for batching.
@@ -44,13 +44,13 @@ def train(args):
                             pin_memory=False)
 
     # Initialize the network that will learn the score function.
-    model = ScoreGenerativeModel(input_size=args.input_size,
-                                 hidden_dim=args.hidden_dim,
-                                 nlayers=args.nlayers,
-                                 emb_size=args.emb_dim,
-                                 time_emb=args.time_emb,
-                                 input_emb=args.input_emb,
-                                 model=args.model).to(device)
+    model = ConditionalScoreGenerativeModel(input_size=args.input_size,
+                                            hidden_dim=args.hidden_dim,
+                                            nlayers=args.nlayers,
+                                            emb_size=args.emb_dim,
+                                            time_emb=args.time_emb,
+                                            input_emb=args.input_emb,
+                                            model=args.model).to(device)
 
     # Forward diffusion process noise scheduler.
     noise_scheduler = NoiseScheduler(nt=args.nt,
@@ -63,7 +63,7 @@ def train(args):
     scheduler = CustomLRScheduler(optimizer, args.lr, args.lr_final,
                                   args.max_epochs)
     # Some placeholders.
-    intermediate_samples = []
+    intermediate_samples = {0: [], 1: [], 2: []}
     train_obj = []
     val_obj = []
 
@@ -78,7 +78,7 @@ def train(args):
                 scheduler.step()
                 for x in (dataloader):
                     x0 = x[0]
-                    noise = torch.randn(x0.shape, device=device)
+                    noise = torch.randn(x0[:, 0, :].shape, device=device)
 
                     # Randomly sample timesteps.
                     timesteps = torch.randint(0,
@@ -87,10 +87,11 @@ def train(args):
                                               device=device).long()
 
                     # Add noise to the data according to the noise schedule.
-                    xt = noise_scheduler.add_noise(x0, noise, timesteps)
+                    xt = noise_scheduler.add_noise(x0[:, 0, :], noise,
+                                                   timesteps)
 
                     # Predict the score at this noise level.
-                    noise_pred = model(xt, timesteps)
+                    noise_pred = model(xt, x0[:, 1, :], timesteps)
 
                     # Score matching objective.
                     obj = (1 / x0.shape[0]) * torch.norm(noise_pred - noise)**2
@@ -109,9 +110,10 @@ def train(args):
                                               len(noise_scheduler),
                                               (dset_val.shape[0], ),
                                               device=device).long()
-                    noise = torch.randn(dset_val.shape, device=device)
-                    xt = noise_scheduler.add_noise(dset_val, noise, timesteps)
-                    noise_pred = model(xt, timesteps)
+                    noise = torch.randn(dset_val[:, 0, :].shape, device=device)
+                    xt = noise_scheduler.add_noise(dset_val[:, 0, :], noise,
+                                                   timesteps)
+                    noise_pred = model(xt, dset_val[:, 1, :], timesteps)
                     obj = (1 / dset_val.shape[0]) * torch.norm(noise_pred -
                                                                noise)**2
                     val_obj.append(obj.item())
@@ -127,20 +129,28 @@ def train(args):
                 if (epoch % args.save_freq == 0
                         or epoch == args.max_epochs - 1):
                     # Sample intermediate results.
+                    test_conditioning_input = [
+                        torch.Tensor([-1.2]).to(device),
+                        torch.Tensor([0.]).to(device),
+                        torch.Tensor([1.2]).to(device)
+                    ]
                     timesteps = list(
                         torch.arange(len(noise_scheduler),
                                      device=device,
                                      dtype=torch.int))[::-1]
-                    sample = torch.randn(args.val_batchsize,
-                                         args.input_size,
-                                         device=device)
-                    for i, t in enumerate(tqdm(timesteps)):
-                        t = t.repeat(args.val_batchsize)
-                        with torch.no_grad():
-                            residual = model(sample, t)
-                            sample = noise_scheduler.step(
-                                residual, t[0], sample)
-                    intermediate_samples.append(sample.cpu().numpy())
+                    for j, c_input in enumerate(test_conditioning_input):
+                        sample = torch.randn(args.val_batchsize,
+                                             args.input_size[0],
+                                             device=device)
+                        c_input = c_input.repeat(
+                            args.val_batchsize).unsqueeze(1)
+                        for i, t in enumerate(tqdm(timesteps)):
+                            t = t.repeat(args.val_batchsize)
+                            with torch.no_grad():
+                                residual = model(sample, c_input, t)
+                                sample = noise_scheduler.step(
+                                    residual, t[0], sample)
+                        intermediate_samples[j].append(sample.cpu().numpy())
 
         torch.save(model.state_dict(),
                    os.path.join(checkpointsdir(args.experiment), "model.pth"))
@@ -157,8 +167,10 @@ def train(args):
                                            device=device)
         intermediate_samples.append(sample.cpu().numpy())
 
-    plot_toy_example_results(args, train_obj, val_obj, dset_val,
-                             intermediate_samples, noise_scheduler)
+    plot_toy_conditional_example_results(args, train_obj, val_obj, dset_val,
+                                         intermediate_samples,
+                                         test_conditioning_input,
+                                         noise_scheduler)
 
 
 if '__main__' == __name__:

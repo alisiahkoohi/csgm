@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 
-from csgm import (NoiseScheduler, ScoreGenerativeModel)
+from csgm import NoiseScheduler, ScoreGenerativeModel
 from csgm.utils import (get_dataset, configsdir, read_config, parse_input_args,
                         make_experiment_name, plot_toy_example_results,
                         checkpointsdir, query_experiments, CustomLRScheduler,

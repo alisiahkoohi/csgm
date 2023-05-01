@@ -23,7 +23,7 @@ class Block(nn.Module):
         return x + self.act(self.bn(self.ff(x)))
 
 
-class ScoreGenerativeModel(nn.Module):
+class ConditionalScoreGenerativeModel(nn.Module):
 
     def __init__(self,
                  input_size: int = [2, 2],
@@ -51,8 +51,8 @@ class ScoreGenerativeModel(nn.Module):
             layers.append(nn.Linear(hidden_dim, input_size[0]))
             self.network = nn.Sequential(*layers)
         elif model == "fno":
-            self.network = ConditionalFourierNeuralOperator(
-                1, hidden_dim, concat_size, input_size[0], nlayers)
+            self.network = FourierNeuralOperator(1, hidden_dim, concat_size,
+                                                 input_size[0], nlayers)
 
     def forward(self, x, y, t):
         x_emb = self.x_input_mlp(x).reshape(x.shape[0], -1)

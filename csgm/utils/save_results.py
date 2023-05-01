@@ -9,6 +9,7 @@ import numpy as np
 import math
 
 from .project_path import checkpointsdir, plotsdir
+from .toy_dataset import ExamplesMGAN
 
 sns.set_style("whitegrid")
 font = {'family': 'serif', 'style': 'normal', 'size': 10}
@@ -78,7 +79,6 @@ def plot_toy_example_results(args, train_obj, val_obj, dataset,
     #                 dpi=200,
     #                 pad_inches=.02)
     #     plt.close(fig)
-
 
     # Calculate number of rows and columns of subplots.
     n_rows, n_cols = closest_squares(args.input_size)
@@ -192,6 +192,102 @@ def plot_toy_example_results(args, train_obj, val_obj, dataset,
     #              'dpi': 400,
     #              'pad_inches': .02
     #          })
+
+
+def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
+                                         intermediate_samples,
+                                         test_conditioning_input,
+                                         noise_scheduler):
+    print('Saving model and samples\n')
+    print('Model directory: ', checkpointsdir(args.experiment), '\n')
+    print('Plots directory: ', plotsdir(args.experiment), '\n')
+
+    if len(train_obj) > 0 and len(val_obj) > 0:
+        train_obj = np.array(train_obj).reshape(-1,
+                                                args.max_epochs).mean(axis=0)
+        # Plot training objective.
+        fig = plt.figure(figsize=(7, 2.5))
+        plt.plot(np.linspace(0, args.max_epochs, len(train_obj)),
+                 np.array(train_obj),
+                 color="#000000",
+                 lw=1.0,
+                 alpha=0.8,
+                 label="training")
+        plt.plot(np.linspace(0, args.max_epochs, len(val_obj)),
+                 np.array(val_obj),
+                 color="green",
+                 lw=1.0,
+                 alpha=0.6,
+                 label="validation")
+        ax = plt.gca()
+        ax.grid(True)
+        plt.legend()
+        plt.ylabel("Training objective")
+        plt.xlabel("Epochs")
+        ax.tick_params(axis='both', which='major', labelsize=10)
+        plt.savefig(os.path.join(plotsdir(args.experiment), "obj.png"),
+                    format="png",
+                    bbox_inches="tight",
+                    dpi=400,
+                    pad_inches=.02)
+        plt.close(fig)
+
+    for key, value in intermediate_samples.items():
+        intermediate_samples[key] = np.stack(value)
+    true_samples = dataset[:args.val_batchsize, :].cpu().numpy()
+
+    test_conditioning_input = [
+        torch.Tensor([-1.2]),
+        torch.Tensor([0.]),
+        torch.Tensor([1.2])
+    ]
+
+    with torch.no_grad():
+        true_samples = [[] for _ in range(len(test_conditioning_input))]
+        fwd_op = ExamplesMGAN(name=args.dataset)
+        for i, c_in in enumerate(test_conditioning_input):
+            true_samples[i].append(
+                fwd_op(torch.Tensor(c_in).repeat(args.val_batchsize)).numpy())
+    true_samples = np.array(true_samples)[:, 0, :].T
+
+    font_prop = matplotlib.font_manager.FontProperties(family='serif',
+                                                       style='normal',
+                                                       size=10)
+    for j, (key, value) in enumerate(intermediate_samples.items()):
+        # Plotting conditional densities.
+        for i, sample in enumerate(value):
+
+            fig = plt.figure(figsize=(7, 7))
+            ax = sns.kdeplot(sample[:, 0],
+                             fill=True,
+                             bw_adjust=0.9,
+                             color="#F4889A",
+                             label=r"Estimated, $x = $ %.1f" %
+                             test_conditioning_input[j])
+            ax = sns.kdeplot(true_samples[:, j],
+                             fill=True,
+                             bw_adjust=0.9,
+                             color="#79D45E",
+                             label=r"True")
+            for label in ax.get_xticklabels():
+                label.set_fontproperties(font_prop)
+            for label in ax.get_yticklabels():
+                label.set_fontproperties(font_prop)
+            plt.ylabel("Probability density function",
+                       fontproperties=font_prop)
+            # plt.xlim([-0.045, 0.045])
+            plt.grid(True)
+            plt.legend()
+            # plt.ylim([0, 125])
+            plt.title("Conditional histograms")
+            plt.savefig(os.path.join(
+                plotsdir(args.experiment),
+                'posterior_test-data-{}_stage-{}.png'.format(j, i)),
+                        format='png',
+                        bbox_inches='tight',
+                        dpi=200)
+            plt.close(fig)
+
 
 def closest_squares(n):
     k = int(math.sqrt(n))

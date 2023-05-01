@@ -62,49 +62,6 @@ def dino_dataset(n=8000, device="cpu"):
     X = np.stack((x, y), axis=1)
     return torch.from_numpy(X.astype(np.float32)).to(device)
 
-# def mgan_eq_4(n=8000, device="cpu"):
-
-#     noise_dist = torch.distributions.gamma.Gamma(1.0, 1.0/0.3)
-
-#     for j in range(n):
-#         x = 6.0*torch.rand(1) - 3.0
-#         x_samples[j, :] = x.cpu().numpy()[0]
-#         y = fwd_op(x)
-#         y_samples[j, :] = y.cpu().numpy()[0]
-
-#     torch.tanh(x) + self.noise_dist.sample(x.shape)
-
-#     rng = np.random.default_rng(42)
-#     ix = rng.integers(0, len(df), n)
-#     x = df["x"].iloc[ix].tolist()
-#     x = np.array(x) + rng.normal(size=len(x)) * 0.15
-#     y = df["y"].iloc[ix].tolist()
-#     y = np.array(y) + rng.normal(size=len(x)) * 0.15
-#     x = (x / 54 - 1) * 4
-#     y = (y / 48 - 1) * 4
-#     X = np.stack((x, y), axis=1)
-#     return torch.from_numpy(X.astype(np.float32)).to(device)
-
-
-# class ForwardOperator(torch.nn.Module):
-#     """
-#     Forward operator
-#     """
-#     def __init__(self, equation=4):
-#         super(ForwardOperator, self).__init__()
-#         self.equation = equation
-#         if equation == 4 or equation == 6:
-#             self.noise_dist = torch.distributions.gamma.Gamma(1.0, 1.0/0.3)
-#         elif equation == 5:
-#             self.noise_dist = torch.distributions.normal.Normal(0., 0.05)
-#     def forward(self, x):
-#         if self.equation == 4:
-#             return torch.tanh(x) + self.noise_dist.sample(x.shape)
-#         elif self.equation == 5:
-#             return torch.tanh(x + self.noise_dist.sample(x.shape))
-#         elif self.equation == 6:
-#             return torch.tanh(x) * self.noise_dist.sample(x.shape)
-
 
 def get_dataset(name, n=8000, n_val=1024, input_size=2, device="cpu"):
     if name == "moons":
@@ -126,3 +83,59 @@ def get_dataset(name, n=8000, n_val=1024, input_size=2, device="cpu"):
         return (TensorDataset(data[:n]), TensorDataset(data[-n_val:]))
     else:
         raise ValueError(f"Unknown dataset: {name}")
+
+
+def get_conditional_dataset(name,
+                            n=8000,
+                            n_val=1024,
+                            input_size=[2, 2],
+                            device="cpu"):
+    if name in ['mgan_4', 'mgan_5', 'mgan_6']:
+        data = mgan_paper_toy_examples(name, n_pairs=n + n_val, device=device)
+        return (TensorDataset(data[:n, ...]), TensorDataset(data[-n_val:,
+                                                                 ...]))
+    else:
+        raise ValueError(f"Unknown dataset: {name}")
+
+
+def mgan_paper_toy_examples(name, n_pairs=8000, device="cpu"):
+    """
+    Generates training pairs
+    """
+    if name in ['mgan_4', 'mgan_5', 'mgan_6']:
+        fwd_op = ExamplesMGAN(name=name)
+        samples = torch.zeros((n_pairs, 2, 1), dtype=torch.float)
+
+        with torch.no_grad():
+            for j in range(n_pairs):
+                x = 6.0 * torch.rand(1, dtype=torch.float) - 3.0
+                samples[j, 1, :] = x[0]
+                y = fwd_op(x)
+                samples[j, 0, :] = y[0]
+
+        return samples.to(device)
+
+    else:
+        raise AssertionError()
+
+
+class ExamplesMGAN(torch.nn.Module):
+    """
+    Forward operator
+    """
+
+    def __init__(self, name='mgan_4'):
+        super(ExamplesMGAN, self).__init__()
+        self.name = name
+        if name == 'mgan_4' or name == 'mgan_6':
+            self.noise_dist = torch.distributions.gamma.Gamma(1.0, 1.0 / 0.3)
+        elif name == 'mgan_5':
+            self.noise_dist = torch.distributions.normal.Normal(0., 0.05)
+
+    def forward(self, x):
+        if self.name == 'mgan_4':
+            return torch.tanh(x) + self.noise_dist.sample(x.shape)
+        elif self.name == 'mgan_5':
+            return torch.tanh(x + self.noise_dist.sample(x.shape))
+        elif self.name == 'mgan_6':
+            return torch.tanh(x) * self.noise_dist.sample(x.shape)
