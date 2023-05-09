@@ -95,12 +95,11 @@ def get_conditional_dataset(name,
         return (TensorDataset(data[:n, ...]), TensorDataset(data[-n_val:,
                                                                  ...]))
 
-
     elif name == 'quadratic':
         samples = torch.zeros((n + n_val, 2, 1), dtype=torch.float)
 
         with torch.no_grad():
-            data = np.array(quadratic(n=n + n_val, s = input_size[0]))[..., 0]
+            data = np.array(quadratic(n=n + n_val, s=input_size[0]))[..., 0]
             data[:, [0, 1], :] = data[:, [1, 0], :]
             data = torch.from_numpy(data.astype(np.float32)).to(device)
         return (TensorDataset(data[:n, ...]), TensorDataset(data[-n_val:,
@@ -151,7 +150,6 @@ class ExamplesMGAN(torch.nn.Module):
             return torch.tanh(x + self.noise_dist.sample(x.shape))
         elif self.name == 'mgan_6':
             return torch.tanh(x) * self.noise_dist.sample(x.shape)
-
 
 
 def quadratic(n=200, s=15, d=1, x_range=(-3, 3), eval_pattern='same'):
@@ -210,7 +208,7 @@ def sort_coordinates(data):
     sorted_data = []
     for pair in data:
         x, y = pair
-        str_idx = np.argsort(x[: ,0])
+        str_idx = np.argsort(x[:, 0])
         x = x[str_idx, :]
         y = y[str_idx, :]
         sorted_data.append((x, y))

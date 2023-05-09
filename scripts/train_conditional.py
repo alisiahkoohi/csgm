@@ -10,7 +10,7 @@ from csgm.utils import (get_conditional_dataset, configsdir, read_config,
                         plot_toy_conditional_example_results, checkpointsdir,
                         query_experiments, CustomLRScheduler, upload_results)
 
-CONFIG_FILE = 'toy_example_conditional.json'
+CONFIG_FILE = 'toy_example_conditional_quadratic.json'
 
 
 def train(args):
@@ -130,8 +130,7 @@ def train(args):
                         or epoch == args.max_epochs - 1):
                     # Sample intermediate results.
                     test_conditioning_input = [
-                        dset_val[0:1, 1, :],
-                        dset_val[1:2, 1, :],
+                        dset_val[0:1, 1, :], dset_val[1:2, 1, :],
                         dset_val[2:3, 1, :]
                     ]
                     timesteps = list(
@@ -143,8 +142,8 @@ def train(args):
                                              args.input_size[0],
                                              device=device)
                         # from IPython import embed; embed()
-                        c_input = c_input.repeat(
-                            args.val_batchsize, 1).unsqueeze(1)
+                        c_input = c_input.repeat(args.val_batchsize,
+                                                 1).unsqueeze(1)
                         for i, t in enumerate(tqdm(timesteps)):
                             t = t.repeat(args.val_batchsize)
                             with torch.no_grad():

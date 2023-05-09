@@ -241,14 +241,15 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
         if args.dataset in ['mgan_4', 'mgan_5', 'mgan_6']:
             fwd_op = ExamplesMGAN(name=args.dataset)
             for i, c_in in enumerate(test_conditioning_input):
-                c_in = c_in.repeat(
-                                args.val_batchsize, 1).unsqueeze(1)
+                c_in = c_in.repeat(args.val_batchsize, 1).unsqueeze(1)
                 true_samples.append(fwd_op(c_in.cpu()).numpy())
             true_samples = np.array(true_samples)[..., 0, 0].T
 
         elif args.dataset == 'quadratic':
             for i, c_in in enumerate(test_conditioning_input):
-                data = np.array(quadratic(n=args.val_batchsize, s = args.input_size[0]))[..., 0]
+                data = np.array(
+                    quadratic(n=args.val_batchsize, s=args.input_size[0]))[...,
+                                                                           0]
                 data[:, [0, 1], :] = data[:, [1, 0], :]
                 true_samples.append(data)
             true_samples = np.array(true_samples)
@@ -256,29 +257,29 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
 
     if args.dataset in ['mgan_4', 'mgan_5', 'mgan_6']:
         font_prop = matplotlib.font_manager.FontProperties(family='serif',
-                                                        style='normal',
-                                                        size=10)
+                                                           style='normal',
+                                                           size=10)
         for j, (key, value) in enumerate(intermediate_samples.items()):
             # Plotting conditional densities.
             for i, sample in enumerate(value):
                 fig = plt.figure(figsize=(7, 7))
                 ax = sns.kdeplot(sample[:, 0],
-                                fill=True,
-                                bw_adjust=0.9,
-                                color="#F4889A",
-                                label=r"Estimated, $x = $ %.2f" %
-                                test_conditioning_input[j])
+                                 fill=True,
+                                 bw_adjust=0.9,
+                                 color="#F4889A",
+                                 label=r"Estimated, $x = $ %.2f" %
+                                 test_conditioning_input[j])
                 ax = sns.kdeplot(true_samples[:, j],
-                                fill=True,
-                                bw_adjust=0.9,
-                                color="#79D45E",
-                                label=r"True")
+                                 fill=True,
+                                 bw_adjust=0.9,
+                                 color="#79D45E",
+                                 label=r"True")
                 for label in ax.get_xticklabels():
                     label.set_fontproperties(font_prop)
                 for label in ax.get_yticklabels():
                     label.set_fontproperties(font_prop)
                 plt.ylabel("Probability density function",
-                        fontproperties=font_prop)
+                           fontproperties=font_prop)
                 # plt.xlim([-0.045, 0.045])
                 plt.grid(True)
                 plt.legend()
@@ -299,12 +300,14 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
                 fig = plt.figure(figsize=(6, 4), dpi=200)
                 for k in range(100):
 
-                    plt.plot(test_conditioning_input[j][0, :].detach().cpu().numpy(),
-                            sample[k, :],
-                            linewidth=0.9,
-                            color="black",
-                            label='_nolegend_' if k > 0 else 'Predicted functions',
-                            alpha=0.6)
+                    plt.plot(
+                        test_conditioning_input[j][
+                            0, :].detach().cpu().numpy(),
+                        sample[k, :],
+                        linewidth=0.9,
+                        color="black",
+                        label='_nolegend_' if k > 0 else 'Predicted functions',
+                        alpha=0.6)
                 plt.legend()
                 plt.grid(True)
                 plt.xlim([-3, 3])
@@ -317,25 +320,26 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
                             dpi=200)
                 plt.close(fig)
 
-
         fig = plt.figure(figsize=(6, 4), dpi=200)
         for k in range(100):
             plt.plot(true_samples[0][1, k, :],
-                    true_samples[0][0, k, :],
-                    linewidth=0.9,
-                    color="black",
-                    label='_nolegend_' if k > 0 else 'Predicted functions',
-                    alpha=0.6)
+                     true_samples[0][0, k, :],
+                     linewidth=0.9,
+                     color="black",
+                     label='_nolegend_' if k > 0 else 'Predicted functions',
+                     alpha=0.6)
         plt.legend()
         plt.grid(True)
         plt.xlim([-3, 3])
         plt.ylim([-9, 9])
-        plt.savefig(os.path.join(plotsdir(args.experiment), "true_samples.png"),
+        plt.savefig(os.path.join(plotsdir(args.experiment),
+                                 "true_samples.png"),
                     format="png",
                     bbox_inches="tight",
                     dpi=400,
                     pad_inches=.02)
         plt.close(fig)
+
 
 def closest_squares(n):
     k = int(math.sqrt(n))
