@@ -130,9 +130,9 @@ def train(args):
                         or epoch == args.max_epochs - 1):
                     # Sample intermediate results.
                     test_conditioning_input = [
-                        torch.Tensor([-1.2]).to(device),
-                        torch.Tensor([0.]).to(device),
-                        torch.Tensor([1.2]).to(device)
+                        dset_val[0:1, 1, :],
+                        dset_val[1:2, 1, :],
+                        dset_val[2:3, 1, :]
                     ]
                     timesteps = list(
                         torch.arange(len(noise_scheduler),
@@ -142,11 +142,13 @@ def train(args):
                         sample = torch.randn(args.val_batchsize,
                                              args.input_size[0],
                                              device=device)
+                        # from IPython import embed; embed()
                         c_input = c_input.repeat(
-                            args.val_batchsize).unsqueeze(1)
+                            args.val_batchsize, 1).unsqueeze(1)
                         for i, t in enumerate(tqdm(timesteps)):
                             t = t.repeat(args.val_batchsize)
                             with torch.no_grad():
+
                                 residual = model(sample, c_input, t)
                                 sample = noise_scheduler.step(
                                     residual, t[0], sample)
