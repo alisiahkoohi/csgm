@@ -198,6 +198,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
                                          intermediate_samples,
                                          test_conditioning_input,
                                          noise_scheduler):
+    from IPython import embed; embed()
     print('Saving model and samples\n')
     print('Model directory: ', checkpointsdir(args.experiment), '\n')
     print('Plots directory: ', plotsdir(args.experiment), '\n')

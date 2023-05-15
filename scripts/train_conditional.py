@@ -5,10 +5,10 @@ from tqdm import tqdm
 import numpy as np
 
 from csgm import NoiseScheduler, ConditionalScoreGenerativeModel
-from csgm.utils import (get_conditional_dataset, configsdir, read_config,
-                        parse_input_args, make_experiment_name,
+from csgm.utils import (get_conditional_dataset, make_experiment_name,
                         plot_toy_conditional_example_results, checkpointsdir,
-                        query_experiments, CustomLRScheduler, upload_results)
+                        query_experiments, CustomLRScheduler, upload_results,
+                        save_exp_to_h5, load_exp_from_h5)
 
 CONFIG_FILE = 'toy_example_conditional_quadratic.json'
 
@@ -155,18 +155,45 @@ def train(args):
 
         torch.save(model.state_dict(),
                    os.path.join(checkpointsdir(args.experiment), "model.pth"))
+        # Save the results.
+        save_exp_to_h5(
+            os.path.join(checkpointsdir(args.experiment), 'checkpoint.h5'),
+            args,
+            train_obj=train_obj,
+            val_obj=val_obj,
+            intermediate_samples=intermediate_samples,
+            test_conditioning_input=test_conditioning_input.cpu().numpy())
 
     elif args.phase == 'test':
         model.load_state_dict(
             torch.load(
                 os.path.join(checkpointsdir(args.experiment), "model.pth")))
+        train_obj, val_obj = load_exp_from_h5(
+            os.path.join(checkpointsdir(args.experiment), 'checkpoint.h5'),
+            'train_obj', 'val_obj')
+        model.eval()
         with torch.no_grad():
-            sample = euler_maruyama_solver(noise_scheduler,
-                                           model,
-                                           args.batchsize,
-                                           dset_val.shape[-1],
-                                           device=device)
-        intermediate_samples.append(sample.cpu().numpy())
+            # Sample intermediate results.
+            test_conditioning_input = [
+                dset_val[0:1, 1, :], dset_val[1:2, 1, :], dset_val[2:3, 1, :]
+            ]
+            timesteps = list(
+                torch.arange(len(noise_scheduler),
+                             device=device,
+                             dtype=torch.int))[::-1]
+            for j, c_input in enumerate(test_conditioning_input):
+                sample = torch.randn(args.val_batchsize,
+                                     args.input_size[0],
+                                     device=device)
+                # from IPython import embed; embed()
+                c_input = c_input.repeat(args.val_batchsize, 1).unsqueeze(1)
+                for i, t in enumerate(tqdm(timesteps)):
+                    t = t.repeat(args.val_batchsize)
+                    with torch.no_grad():
+
+                        residual = model(sample, c_input, t)
+                        sample = noise_scheduler.step(residual, t[0], sample)
+                intermediate_samples[j].append(sample.cpu().numpy())
 
     plot_toy_conditional_example_results(args, train_obj, val_obj, dset_val,
                                          intermediate_samples,
