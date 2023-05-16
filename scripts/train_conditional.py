@@ -162,7 +162,7 @@ def train(args):
             train_obj=train_obj,
             val_obj=val_obj,
             intermediate_samples=intermediate_samples,
-            test_conditioning_input=test_conditioning_input.cpu().numpy())
+            test_conditioning_input=torch.stack(test_conditioning_input).cpu().numpy())
 
     elif args.phase == 'test':
         model.load_state_dict(

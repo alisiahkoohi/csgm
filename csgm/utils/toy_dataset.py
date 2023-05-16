@@ -171,14 +171,14 @@ def quadratic(n=200, s=15, d=1, x_range=(-3, 3), eval_pattern='same'):
         function values.
     """
     data = []
-
+    noise_dist = torch.distributions.gamma.Gamma(1.0, 2.0)
     if eval_pattern == 'same':
         # x = np.sort(np.random.uniform(*x_range, size=(s, d)).astype(np.float32))
         x = np.linspace(*x_range, s).repeat(d).reshape(s, d).astype(np.float32)
         for i in range(n):
             # a = np.random.uniform(-1, 1, size=(d, )).astype(np.float32)
             a = np.random.choice([-1.0, 1.0]).astype(np.float32)
-            eps = np.random.randn()
+            eps = np.array(noise_dist.sample())
             y = a * x**2 + eps
             data.append((x, y))
 
