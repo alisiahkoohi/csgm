@@ -6,7 +6,6 @@
 Run the commands below to install the required packages.
 
 ```bash
-git clone https://github.com/alisiahkoohi/csgm
 cd csgm/
 conda env create -f environment.yml
 conda activate csgm
@@ -22,12 +21,5 @@ following times.
 To run the example scripts, you can use the following commands.
 
 ```bash
-python scripts/train.py --dataset moons
+python scripts/train_conditional.py
 ```
-## Questions
-
-Please contact alisk@rice.edu for questions.
-
-## Authors
-
-Ali Siahkoohi and Lorenzo Baldassari

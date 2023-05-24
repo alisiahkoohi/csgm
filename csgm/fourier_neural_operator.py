@@ -1,4 +1,3 @@
-# Author: Ali Siahkoohi, alisk@rice.edu
 # Partially based on https://github.com/zongyi-li/fourier_neural_operator and
 # https://github.com/tanelp/tiny-diffusion
 
@@ -123,8 +122,8 @@ class FourierNeuralOperator(torch.nn.Module):
         # operators.
         self.linear_layers = torch.nn.ModuleList([
             torch.nn.Linear(in_length, self.lifted_dim),
-            torch.nn.Linear(self.lifted_dim, 128),
-            torch.nn.Linear(128, out_length)
+            torch.nn.Linear(self.lifted_dim, 64),
+            torch.nn.Linear(64, out_length)
         ])
 
         # Initialize Fourier neural layers.

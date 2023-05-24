@@ -7,8 +7,8 @@ import numpy as np
 from csgm import NoiseScheduler, ConditionalScoreGenerativeModel
 from csgm.utils import (get_conditional_dataset, make_experiment_name,
                         plot_toy_conditional_example_results, checkpointsdir,
-                        query_experiments, CustomLRScheduler, upload_results,
-                        save_exp_to_h5, load_exp_from_h5)
+                        query_experiments, CustomLRScheduler, save_exp_to_h5,
+                        load_exp_from_h5)
 
 CONFIG_FILE = 'toy_example_conditional_quadratic.json'
 
@@ -44,13 +44,12 @@ def train(args):
                             pin_memory=False)
 
     # Initialize the network that will learn the score function.
-    model = ConditionalScoreGenerativeModel(input_size=args.input_size,
-                                            hidden_dim=args.hidden_dim,
-                                            nlayers=args.nlayers,
-                                            emb_size=args.emb_dim,
-                                            time_emb=args.time_emb,
-                                            input_emb=args.input_emb,
-                                            model=args.model).to(device)
+    model = ConditionalScoreGenerativeModel(
+        input_size=args.input_size,
+        hidden_dim=args.hidden_dim,
+        nlayers=args.nlayers,
+        time_emb=args.time_emb,
+    ).to(device)
 
     # Forward diffusion process noise scheduler.
     noise_scheduler = NoiseScheduler(nt=args.nt,
@@ -129,9 +128,7 @@ def train(args):
                 if (epoch % args.save_freq == 0
                         or epoch == args.max_epochs - 1):
                     # Sample intermediate results.
-                    test_conditioning_input = [
-                        dset_val[0:1, 1, :]
-                    ]
+                    test_conditioning_input = [dset_val[0:1, 1, :]]
                     timesteps = list(
                         torch.arange(len(noise_scheduler),
                                      device=device,
@@ -141,8 +138,7 @@ def train(args):
                                              args.input_size[0],
                                              device=device)
                         # from IPython import embed; embed()
-                        c_input = c_input.repeat(args.val_batchsize,
-                                                 1)
+                        c_input = c_input.repeat(args.val_batchsize, 1)
                         for i, t in enumerate(tqdm(timesteps)):
                             t = t.repeat(args.val_batchsize)
                             with torch.no_grad():
@@ -155,13 +151,14 @@ def train(args):
         torch.save(model.state_dict(),
                    os.path.join(checkpointsdir(args.experiment), "model.pth"))
         # Save the results.
-        save_exp_to_h5(
-            os.path.join(checkpointsdir(args.experiment), 'checkpoint.h5'),
-            args,
-            train_obj=train_obj,
-            val_obj=val_obj,
-            intermediate_samples=intermediate_samples,
-            test_conditioning_input=torch.stack(test_conditioning_input).cpu().numpy())
+        save_exp_to_h5(os.path.join(checkpointsdir(args.experiment),
+                                    'checkpoint.h5'),
+                       args,
+                       train_obj=train_obj,
+                       val_obj=val_obj,
+                       intermediate_samples=intermediate_samples,
+                       test_conditioning_input=torch.stack(
+                           test_conditioning_input).cpu().numpy())
 
     elif args.phase == 'test':
         model.load_state_dict(
@@ -173,9 +170,7 @@ def train(args):
         model.eval()
         with torch.no_grad():
             # Sample intermediate results.
-            test_conditioning_input = [
-                dset_val[0:1, 1, :]
-            ]
+            test_conditioning_input = [dset_val[0:1, 1, :]]
             timesteps = list(
                 torch.arange(len(noise_scheduler),
                              device=device,
@@ -205,6 +200,3 @@ if '__main__' == __name__:
     args_list = query_experiments(CONFIG_FILE)
     for args in args_list:
         train(args)
-
-    # Upload results to Weights & Biases for tracking training progress.
-    upload_results(args, flag='--progress')
