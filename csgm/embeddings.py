@@ -12,13 +12,19 @@ class SinusoidalEmbedding(nn.Module):
 
     def forward(self, x: torch.Tensor):
         x = x * self.scale
-        half_size = self.size // 2
+        if self.size % 2 == 0:
+            half_size = self.size // 2
+        else:
+            half_size = self.size // 2 + 1
         emb = torch.log(torch.tensor([10000.0],
                                      device=x.device)) / (half_size - 1)
         emb = torch.exp(-emb * torch.arange(half_size, device=x.device))
         emb = x.unsqueeze(-1) * emb.unsqueeze(0)
         emb = torch.cat((torch.sin(emb), torch.cos(emb)), dim=-1)
-        return emb
+        if self.size % 2 == 0:
+            return emb
+        else:
+            return emb[:, :self.size]
 
     def __len__(self):
         return self.size

@@ -142,7 +142,7 @@ def train(args):
                                              device=device)
                         # from IPython import embed; embed()
                         c_input = c_input.repeat(args.val_batchsize,
-                                                 1).unsqueeze(1)
+                                                 1)
                         for i, t in enumerate(tqdm(timesteps)):
                             t = t.repeat(args.val_batchsize)
                             with torch.no_grad():
@@ -185,7 +185,7 @@ def train(args):
                                      args.input_size[0],
                                      device=device)
                 # from IPython import embed; embed()
-                c_input = c_input.repeat(args.val_batchsize * 5, 1).unsqueeze(1)
+                c_input = c_input.repeat(args.val_batchsize * 5, 1)
                 for i, t in enumerate(tqdm(timesteps)):
                     t = t.repeat(args.val_batchsize * 5)
                     with torch.no_grad():

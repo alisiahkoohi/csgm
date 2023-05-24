@@ -51,18 +51,24 @@ class ConditionalScoreGenerativeModel(nn.Module):
             layers.append(nn.Linear(hidden_dim, input_size[0]))
             self.network = nn.Sequential(*layers)
         elif model == "fno":
-            self.network = FourierNeuralOperator(1, hidden_dim, concat_size,
+            self.network = FourierNeuralOperator(10, hidden_dim, 3,
                                                  input_size[0], nlayers)
 
     def forward(self, x, y, t):
-        x_emb = self.x_input_mlp(x).reshape(x.shape[0], -1)
-        y_emb = self.y_input_mlp(y).reshape(y.shape[0], -1)
-        t_emb = self.time_mlp(t)
-        z = torch.cat((x_emb, y_emb, t_emb), dim=-1)
+        # from IPython import embed; embed()
 
         if self.model == "mlp":
+            x_emb = self.x_input_mlp(x).reshape(x.shape[0], -1)
+            y_emb = self.y_input_mlp(y).reshape(y.shape[0], -1)
+            t_emb = self.time_mlp(t)
+            z = torch.cat((x_emb, y_emb, t_emb), dim=-1)
             z = self.network(z)
         elif self.model == "fno":
-            z = z.unsqueeze(1)
+            x_emb = self.x_input_mlp(x).reshape(x.shape[0], x.shape[1], -1)
+            y_emb = self.y_input_mlp(y).reshape(y.shape[0], y.shape[1], -1)
+            t_emb = self.time_mlp(t).reshape(t.shape[0], x.shape[1], -1)
+            # print(x.shape, y.shape, t.shape, x_emb.shape, y_emb.shape, t_emb.shape)
+            z = torch.cat((x_emb, y_emb, t_emb), dim=-1)
+            # z = z.unsqueeze(1)
             z = self.network(z)
         return z

@@ -123,8 +123,8 @@ class FourierNeuralOperator(torch.nn.Module):
         # operators.
         self.linear_layers = torch.nn.ModuleList([
             torch.nn.Linear(in_length, self.lifted_dim),
-            torch.nn.Linear(self.lifted_dim, 512),
-            torch.nn.Linear(512, out_length)
+            torch.nn.Linear(self.lifted_dim, 128),
+            torch.nn.Linear(128, out_length)
         ])
 
         # Initialize Fourier neural layers.
@@ -155,6 +155,7 @@ class FourierNeuralOperator(torch.nn.Module):
             A torch.Tensor of size `(batch_size, length, 1)`, which is
             the outcome of the `FourierNeuralOperator`.
         """
+        # from IPython import embed; embed()
         # Extract the `batch_size`, and `length` values.
         batch_size, length = x.shape[0:2]
 
