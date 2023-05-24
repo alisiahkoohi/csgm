@@ -56,7 +56,7 @@ def plot_toy_example_results(args, train_obj, val_obj, dataset,
         plt.close(fig)
 
     intermediate_samples = np.stack(intermediate_samples)
-    true_samples = dataset[:args.val_batchsize, :].cpu().numpy()
+    true_samples = dataset[:args.val_batchsize*5, :].cpu().numpy()
 
     # Plot histogtams.
     # for i, sample in enumerate(intermediate_samples):
@@ -207,12 +207,6 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
                                                 args.max_epochs).mean(axis=0)
         # Plot training objective.
         fig = plt.figure(figsize=(7, 2.5))
-        plt.plot(np.linspace(0, args.max_epochs, len(train_obj)),
-                 np.array(train_obj),
-                 color="#000000",
-                 lw=1.0,
-                 alpha=0.8,
-                 label="training")
         plt.plot(np.linspace(0, args.max_epochs, len(val_obj)),
                  np.array(val_obj),
                  color="green",
@@ -241,14 +235,14 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
         if args.dataset in ['mgan_4', 'mgan_5', 'mgan_6']:
             fwd_op = ExamplesMGAN(name=args.dataset)
             for i, c_in in enumerate(test_conditioning_input):
-                c_in = c_in.repeat(args.val_batchsize, 1).unsqueeze(1)
+                c_in = c_in.repeat(args.val_batchsize*5, 1).unsqueeze(1)
                 true_samples.append(fwd_op(c_in.cpu()).numpy())
             true_samples = np.array(true_samples)[..., 0, 0].T
 
         elif args.dataset == 'quadratic':
             for i, c_in in enumerate(test_conditioning_input):
                 data = np.array(
-                    quadratic(n=args.val_batchsize, s=args.input_size[0]))[...,
+                    quadratic(n=args.val_batchsize*5, s=args.input_size[0]))[...,
                                                                            0]
                 data[:, [0, 1], :] = data[:, [1, 0], :]
                 true_samples.append(data)

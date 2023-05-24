@@ -63,7 +63,7 @@ def train(args):
     scheduler = CustomLRScheduler(optimizer, args.lr, args.lr_final,
                                   args.max_epochs)
     # Some placeholders.
-    intermediate_samples = {0: [], 1: [], 2: []}
+    intermediate_samples = {0: []}
     train_obj = []
     val_obj = []
 
@@ -130,8 +130,7 @@ def train(args):
                         or epoch == args.max_epochs - 1):
                     # Sample intermediate results.
                     test_conditioning_input = [
-                        dset_val[0:1, 1, :], dset_val[1:2, 1, :],
-                        dset_val[2:3, 1, :]
+                        dset_val[0:1, 1, :]
                     ]
                     timesteps = list(
                         torch.arange(len(noise_scheduler),
@@ -168,27 +167,27 @@ def train(args):
         model.load_state_dict(
             torch.load(
                 os.path.join(checkpointsdir(args.experiment), "model.pth")))
-        train_obj, val_obj = load_exp_from_h5(
-            os.path.join(checkpointsdir(args.experiment), 'checkpoint.h5'),
-            'train_obj', 'val_obj')
+        # train_obj, val_obj = load_exp_from_h5(
+        #     os.path.join(checkpointsdir(args.experiment), 'checkpoint.h5'),
+        #     'train_obj', 'val_obj')
         model.eval()
         with torch.no_grad():
             # Sample intermediate results.
             test_conditioning_input = [
-                dset_val[0:1, 1, :], dset_val[1:2, 1, :], dset_val[2:3, 1, :]
+                dset_val[0:1, 1, :]
             ]
             timesteps = list(
                 torch.arange(len(noise_scheduler),
                              device=device,
                              dtype=torch.int))[::-1]
             for j, c_input in enumerate(test_conditioning_input):
-                sample = torch.randn(args.val_batchsize,
+                sample = torch.randn(args.val_batchsize * 5,
                                      args.input_size[0],
                                      device=device)
                 # from IPython import embed; embed()
-                c_input = c_input.repeat(args.val_batchsize, 1).unsqueeze(1)
+                c_input = c_input.repeat(args.val_batchsize * 5, 1).unsqueeze(1)
                 for i, t in enumerate(tqdm(timesteps)):
-                    t = t.repeat(args.val_batchsize)
+                    t = t.repeat(args.val_batchsize * 5)
                     with torch.no_grad():
 
                         residual = model(sample, c_input, t)
