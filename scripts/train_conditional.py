@@ -48,7 +48,7 @@ def train(args):
         input_size=args.input_size,
         hidden_dim=args.hidden_dim,
         nlayers=args.nlayers,
-        time_emb=args.time_emb,
+        nt=args.nt,
     ).to(device)
 
     # Forward diffusion process noise scheduler.

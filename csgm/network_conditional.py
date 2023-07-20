@@ -27,17 +27,17 @@ class ConditionalScoreGenerativeModel(nn.Module):
                  input_size: int = 25,
                  hidden_dim: int = 128,
                  nlayers: int = 5,
-                 time_emb: str = "sinusoidal"):
+                 nt = 500):
         super().__init__()
 
-        self.time_emb = Embedding(input_size, time_emb)
+        self.nt = nt
         self.network = FourierNeuralOperator(10, hidden_dim, 3, 1, nlayers)
 
     def forward(self, x, y, t):
 
         x = x.reshape(x.shape[0], x.shape[1], -1)
         y = y.reshape(y.shape[0], y.shape[1], -1)
-        t_emb = self.time_emb(t).reshape(t.shape[0], x.shape[1], -1)
-        z = torch.cat((x, y, t_emb), dim=-1)
+        t = t.reshape(-1, 1, 1).repeat(1, x.shape[1], 1) / self.nt * 2.0 - 1.0
+        z = torch.cat((x, y, t), dim=-1)
         z = self.network(z)
         return z

@@ -58,7 +58,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
 
         for i, c_in in enumerate(test_conditioning_input):
             data = np.array(
-                quadratic(n=args.val_batchsize*5, s=args.input_size[0]))[...,
+                quadratic(n=args.val_batchsize*5, s=args.input_size))[...,
                                                                         0]
             data[:, [0, 1], :] = data[:, [1, 0], :]
             true_samples.append(data)
