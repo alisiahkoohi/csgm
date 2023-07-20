@@ -11,6 +11,7 @@
     "beta_schedule": "linear",
     "input_size": 25,
     "hidden_dim": 128,
+    "modes": 5,
     "nlayers": 5,
     "num_train": 100000,
     "cuda": 0,

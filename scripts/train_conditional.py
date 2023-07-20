@@ -45,7 +45,7 @@ def train(args):
 
     # Initialize the network that will learn the score function.
     model = ConditionalScoreGenerativeModel(
-        input_size=args.input_size,
+        modes=args.modes,
         hidden_dim=args.hidden_dim,
         nlayers=args.nlayers,
         nt=args.nt,

@@ -24,14 +24,14 @@ class Block(nn.Module):
 class ConditionalScoreGenerativeModel(nn.Module):
 
     def __init__(self,
-                 input_size: int = 25,
+                 modes: int = 5,
                  hidden_dim: int = 128,
                  nlayers: int = 5,
-                 nt = 500):
+                 nt: int = 500):
         super().__init__()
 
         self.nt = nt
-        self.network = FourierNeuralOperator(5, hidden_dim, 3, 1, nlayers)
+        self.network = FourierNeuralOperator(modes, hidden_dim, 3, 1, nlayers)
 
     def forward(self, x, y, t):
 
