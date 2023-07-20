@@ -136,7 +136,7 @@ def train(args):
                                      dtype=torch.int))[::-1]
                     for j, c_input in enumerate(test_conditioning_input):
                         sample = torch.randn(args.val_batchsize,
-                                             args.input_size[0],
+                                             args.input_size,
                                              device=device)
                         # from IPython import embed; embed()
                         c_input = c_input.repeat(args.val_batchsize, 1)
@@ -178,7 +178,7 @@ def train(args):
                              dtype=torch.int))[::-1]
             for j, c_input in enumerate(test_conditioning_input):
                 sample = torch.randn(args.val_batchsize * 5,
-                                     args.input_size[0],
+                                     args.input_size,
                                      device=device)
                 # from IPython import embed; embed()
                 c_input = c_input.repeat(args.val_batchsize * 5, 1)

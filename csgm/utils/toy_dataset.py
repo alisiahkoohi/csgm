@@ -9,14 +9,14 @@ from torch.utils.data import TensorDataset
 def get_conditional_dataset(name,
                             n=8000,
                             n_val=1024,
-                            input_size=[2, 2],
+                            input_size=2,
                             device="cpu"):
 
     if name == 'quadratic':
         samples = torch.zeros((n + n_val, 2, 1), dtype=torch.float)
 
         with torch.no_grad():
-            data = np.array(quadratic(n=n + n_val, s=input_size[0]))[..., 0]
+            data = np.array(quadratic(n=n + n_val, s=input_size))[..., 0]
             data[:, [0, 1], :] = data[:, [1, 0], :]
             data = torch.from_numpy(data.astype(np.float32)).to(device)
         return (TensorDataset(data[:n, ...]), TensorDataset(data[-n_val:,

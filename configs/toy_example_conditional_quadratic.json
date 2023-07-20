@@ -9,7 +9,7 @@
     "lr_final": 0.0005,
     "nt": 500,
     "beta_schedule": "linear",
-    "input_size": "25,25",
+    "input_size": 25,
     "hidden_dim": 128,
     "nlayers": 5,
     "num_train": 100000,

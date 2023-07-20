@@ -24,13 +24,13 @@ class Block(nn.Module):
 class ConditionalScoreGenerativeModel(nn.Module):
 
     def __init__(self,
-                 input_size: int = [25, 25],
+                 input_size: int = 25,
                  hidden_dim: int = 128,
                  nlayers: int = 5,
                  time_emb: str = "sinusoidal"):
         super().__init__()
 
-        self.time_emb = Embedding(input_size[0], time_emb)
+        self.time_emb = Embedding(input_size, time_emb)
         self.network = FourierNeuralOperator(10, hidden_dim, 3, 1, nlayers)
 
     def forward(self, x, y, t):
