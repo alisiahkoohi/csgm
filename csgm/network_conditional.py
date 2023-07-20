@@ -4,7 +4,6 @@ import torch
 from torch import nn
 from typing import Optional
 
-from .embeddings import Embedding
 from .fourier_neural_operator import FourierNeuralOperator
 
 
