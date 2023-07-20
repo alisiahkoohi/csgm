@@ -31,7 +31,7 @@ class ConditionalScoreGenerativeModel(nn.Module):
         super().__init__()
 
         self.nt = nt
-        self.network = FourierNeuralOperator(10, hidden_dim, 3, 1, nlayers)
+        self.network = FourierNeuralOperator(5, hidden_dim, 3, 1, nlayers)
 
     def forward(self, x, y, t):
 
