@@ -31,8 +31,7 @@ class ConditionalScoreGenerativeModel(nn.Module):
         super().__init__()
 
         self.time_emb = Embedding(input_size[0], time_emb)
-        self.network = FourierNeuralOperator(10, hidden_dim, 3,
-                                            input_size[0], nlayers)
+        self.network = FourierNeuralOperator(10, hidden_dim, 3, 1, nlayers)
 
     def forward(self, x, y, t):
 

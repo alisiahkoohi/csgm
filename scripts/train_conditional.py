@@ -91,6 +91,7 @@ def train(args):
 
                     # Predict the score at this noise level.
                     noise_pred = model(xt, x0[:, 1, :], timesteps)
+                    # from IPython import embed; embed()
 
                     # Score matching objective.
                     obj = (1 / x0.shape[0]) * torch.norm(noise_pred - noise)**2

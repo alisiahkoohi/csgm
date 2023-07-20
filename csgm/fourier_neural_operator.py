@@ -196,4 +196,4 @@ class FourierNeuralOperator(torch.nn.Module):
         # `(batch_size, length, 1)`.
         x = self.linear_layers[2](x)
 
-        return x[:, 0, :]
+        return x[:, :, 0]
