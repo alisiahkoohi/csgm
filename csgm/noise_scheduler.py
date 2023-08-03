@@ -94,8 +94,8 @@ class NoiseScheduler():
         s1 = self.sqrt_alphas_cumprod[timesteps]
         s2 = self.sqrt_one_minus_alphas_cumprod[timesteps]
 
-        s1 = s1.reshape(-1, 1)
-        s2 = s2.reshape(-1, 1)
+        s1 = s1.reshape(-1, *[1 for _ in range(x_start.dim() -1)])
+        s2 = s2.reshape(-1, *[1 for _ in range(x_start.dim() -1)])
 
         return s1 * x_start + s2 * x_noise
 

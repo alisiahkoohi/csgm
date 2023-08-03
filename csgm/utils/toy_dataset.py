@@ -4,6 +4,11 @@ import numpy as np
 import torch
 
 from torch.utils.data import TensorDataset
+import os
+import h5py
+
+from .project_path import datadir
+from .normalizer import Normalizer
 
 
 def get_conditional_dataset(name,
@@ -19,9 +24,47 @@ def get_conditional_dataset(name,
             data = np.array(quadratic(n=n + n_val, s=input_size))[..., 0]
             data[:, [0, 1], :] = data[:, [1, 0], :]
             data = torch.from_numpy(data.astype(np.float32)).to(device)
+            # from IPython import embed; embed()
         return (TensorDataset(data[:n, ...]), TensorDataset(data[-n_val:,
-                                                                    ...]))
+                                                                 ...]))
 
+    elif name == "seismic":
+        # Define data directory
+        data_path = os.path.join(datadir("training-data"), "training-pairs.h5")
+
+        # Download the dataset into the data directory if it does not exist
+        if not os.path.isfile(data_path):
+            os.system("wget https://www.dropbox.com/s/53u8ckb9aje8xv4/"
+                      "training-pairs.h5 --no-check-certificate -O" +
+                      data_path)
+
+        # Load seismic images and create training and testing data
+        file = h5py.File(data_path, 'r')
+        x = torch.from_numpy(file['dm'][...])
+        y = torch.from_numpy(file['rtm'][...])
+        file.close()
+
+        # Zero out water layer.
+        y[..., :10] = 0.0
+
+        # Normalize the seismic images in the training data.
+        x_normalizer = Normalizer(x)
+        x = x_normalizer.normalize(x)
+
+        # Normalize the seismic images in the training data.
+        y_normalizer = Normalizer(y)
+        y = y_normalizer.normalize(y)
+
+        nsamples = x.shape[0]
+        perm_idxs = torch.randperm(nsamples)
+        x = x[perm_idxs, ...].permute(0, 1, 3, 2).unsqueeze(-1)
+        y = y[perm_idxs, ...].permute(0, 1, 3, 2).unsqueeze(-1)
+        data = torch.cat((x, y), dim=1)
+
+        ntrain = nsamples // 10 * 9
+
+        return (TensorDataset(data[:ntrain,
+                                   ...]), TensorDataset(data[ntrain:, ...]))
     else:
         raise ValueError(f"Unknown dataset: {name}")
 

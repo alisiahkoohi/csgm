@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 
-from csgm import NoiseScheduler, ConditionalScoreGenerativeModel
+from csgm import NoiseScheduler, ConditionalScoreModel1D
 from csgm.utils import (get_conditional_dataset, make_experiment_name,
                         plot_toy_conditional_example_results, checkpointsdir,
                         query_experiments, CustomLRScheduler, save_exp_to_h5,
@@ -44,7 +44,7 @@ def train(args):
                             pin_memory=False)
 
     # Initialize the network that will learn the score function.
-    model = ConditionalScoreGenerativeModel(
+    model = ConditionalScoreModel1D(
         modes=args.modes,
         hidden_dim=args.hidden_dim,
         nlayers=args.nlayers,
@@ -91,7 +91,6 @@ def train(args):
 
                     # Predict the score at this noise level.
                     noise_pred = model(xt, x0[:, 1, :], timesteps)
-                    # from IPython import embed; embed()
 
                     # Score matching objective.
                     obj = (1 / x0.shape[0]) * torch.norm(noise_pred - noise)**2
