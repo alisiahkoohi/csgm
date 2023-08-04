@@ -6,7 +6,7 @@
     "max_epochs": 300,
     "save_freq": 100,
     "lr": 0.001,
-    "lr_final": 0.0001,
+    "lr_final": 0.0005,
     "nt": 500,
     "beta_schedule": "linear",
     "input_size": 25,
@@ -16,5 +16,6 @@
     "num_train": 100000,
     "cuda": 0,
     "seed": 0,
-    "phase": "train"
+    "phase": "train",
+    "plot_multi_res": 0
 }

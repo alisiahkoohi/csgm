@@ -7,6 +7,7 @@ import seaborn as sns
 import numpy as np
 import math
 from scipy.signal import hilbert
+import h5py
 
 from .project_path import checkpointsdir, plotsdir
 from .toy_dataset import quadratic
@@ -30,6 +31,12 @@ def normalize_std(mu, sigma):
                                           5e-1), analytic_mu
 
 
+def find_index_closest_value(arr, value):
+    absolute_diff = np.abs(arr - value)
+    closest_index = np.argmin(absolute_diff)
+    return closest_index
+
+
 def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
                                          intermediate_samples,
                                          test_conditioning_input,
@@ -38,8 +45,9 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
     print('Model directory: ', checkpointsdir(args.experiment), '\n')
     print('Plots directory: ', plotsdir(args.experiment), '\n')
 
-    from IPython import embed
-    embed()
+    if not os.path.exists(
+            os.path.join(plotsdir(args.experiment), str(args.input_size))):
+        os.mkdir(os.path.join(plotsdir(args.experiment), str(args.input_size)))
 
     if len(train_obj) > 0 and len(val_obj) > 0:
         train_obj = np.array(train_obj).reshape(-1,
@@ -95,7 +103,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
             plt.xlim([-3, 3])
             plt.ylim([-9, 9])
             plt.savefig(os.path.join(
-                plotsdir(args.experiment),
+                plotsdir(args.experiment), str(args.input_size),
                 'posterior_test-data-{}_stage-{}.png'.format(j, i)),
                         format='png',
                         bbox_inches='tight',
@@ -114,7 +122,8 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
     plt.grid(True)
     plt.xlim([-3, 3])
     plt.ylim([-9, 9])
-    plt.savefig(os.path.join(plotsdir(args.experiment), "true_samples.png"),
+    plt.savefig(os.path.join(plotsdir(args.experiment), str(args.input_size),
+                             "true_samples.png"),
                 format="png",
                 bbox_inches="tight",
                 dpi=400,
@@ -147,12 +156,59 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
                 plt.title(r"Conditional density, $x = %.2f$" %
                           test_conditioning_input[j][0, k])
                 plt.savefig(os.path.join(
-                    plotsdir(args.experiment),
+                    plotsdir(args.experiment), str(args.input_size),
                     'marginal_test-data-{}_stage-{}-x-{}.png'.format(j, i, k)),
                             format='png',
                             bbox_inches='tight',
                             dpi=400)
                 plt.close(fig)
+
+    if args.plot_multi_res:
+
+        colors = [
+            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
+            '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
+        ]
+
+        file = h5py.File(
+            os.path.join(checkpointsdir(args.experiment),
+                         'collected_samples.h5'), 'r')
+
+        for val in [-1.0, 0.0, 1.0]:
+            fig = plt.figure(figsize=(7, 3))
+            index = find_index_closest_value(true_samples[0][1, 0, :], val)
+            ax = sns.kdeplot(true_samples[0][0, :, index],
+                             fill=True,
+                             bw_adjust=0.9,
+                             color="#000000",
+                             label='True density')
+            for input_idx, input_size in enumerate([20, 25, 30, 40, 50]):
+
+                index = find_index_closest_value(
+                    file['x_' + str(input_size)][...], val)
+
+                ax = sns.kdeplot(
+                    file[str(input_size)][:, index],
+                    fill=False,
+                    bw_adjust=0.9,
+                    linewidth=0.9,
+                    color=colors[input_idx],
+                    label=str(input_size),
+                )
+
+            plt.ylabel("Probability density function"),
+            plt.xlim([-2, 5])
+            plt.grid(True)
+            plt.legend(loc='upper right', ncols=2, fontsize=10)
+            plt.title(r"Conditional density, $x = %.2f$" %
+                      test_conditioning_input[j][0, k])
+            plt.savefig(os.path.join(plotsdir(args.experiment),
+                                     'marginal_val-{}.png'.format(val)),
+                        format='png',
+                        bbox_inches='tight',
+                        dpi=400)
+            plt.close(fig)
+        file.close()
 
 
 def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
@@ -438,8 +494,7 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
         plt.ticklabel_format(axis="y", style="sci", useMathText=True)
         plt.grid(True)
         leg = plt.legend(loc="lower left", ncol=3, fontsize=8)
-        plt.title("Vertical profile at " + str(loc * spacing[1] / 1e3) +
-                  " km")
+        plt.title("Vertical profile at " + str(loc * spacing[1] / 1e3) + " km")
         plt.ylabel("Perturbation")
         plt.ylim([-1400, 1300])
         plt.xlim([-0.05, samples_mean.shape[2] * spacing[1] / 1e3 + 0.05])

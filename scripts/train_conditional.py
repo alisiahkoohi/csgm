@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
+import h5py
 
 from csgm import NoiseScheduler, ConditionalScoreModel1D
 from csgm.utils import (get_conditional_dataset, make_experiment_name,
@@ -189,10 +190,35 @@ def train(args):
                         sample = noise_scheduler.step(residual, t[0], sample)
                 intermediate_samples[j].append(sample.cpu().numpy())
 
-    plot_toy_conditional_example_results(args, train_obj, val_obj, dset_val,
-                                         intermediate_samples,
-                                         test_conditioning_input,
-                                         noise_scheduler)
+        file = h5py.File(
+            os.path.join(checkpointsdir(args.experiment),
+                         'collected_samples.h5'), 'a')
+        file.require_dataset(str(args.input_size),
+                             shape=(args.val_batchsize * 5, args.input_size),
+                             dtype=np.float32)
+        file.require_dataset('real_' + str(args.input_size),
+                             shape=(dset_val.shape[0], args.input_size),
+                             dtype=np.float32)
+        file.require_dataset('x_' + str(args.input_size),
+                             shape=(args.input_size,),
+                             dtype=np.float32)
+
+        file[str(args.input_size)][...] = np.stack(
+            intermediate_samples[0])[0, ...]
+        file['real_' +
+             str(str(args.input_size))][...] = dset_val[:, 0, :].cpu().numpy()
+        file['x_' + str(args.input_size)][...] = dset_val[0, 1, :].cpu().numpy()
+        file.close()
+
+    plot_toy_conditional_example_results(
+        args,
+        train_obj,
+        val_obj,
+        dset_val,
+        intermediate_samples,
+        test_conditioning_input,
+        noise_scheduler,
+    )
 
 
 if '__main__' == __name__:

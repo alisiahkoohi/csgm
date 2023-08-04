@@ -25,7 +25,7 @@ def make_experiment_name(args):
         if key not in [
                 'experiment_name', 'cuda', 'seed', 'save_freq', 'phase',
                 'val_batchsize', 'input_size', 'testing_epoch',
-                'testing_nsamples', 'test_idx'
+                'testing_nsamples', 'test_idx', 'plot_multi_res'
         ]:
             experiment_name += key + '-{}_'.format(value)
     return experiment_name[:-1].replace('[', '').replace(']', '').replace(

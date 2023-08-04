@@ -69,6 +69,13 @@ def get_conditional_dataset(name,
         raise ValueError(f"Unknown dataset: {name}")
 
 
+def find_replace_closest_number(some_set, k):
+    closest_num = min(some_set, key=lambda x: abs(x - k))
+    some_set.remove(closest_num)
+    some_set.add(k)
+    return some_set
+
+
 def quadratic(n=200, s=15, d=1, x_range=(-3, 3), eval_pattern='same'):
     """Creat quadratic toy dataset of pairs of coordinates and function values.
 
@@ -90,7 +97,13 @@ def quadratic(n=200, s=15, d=1, x_range=(-3, 3), eval_pattern='same'):
     data = []
     noise_dist = torch.distributions.gamma.Gamma(1.0, 2.5)
     if eval_pattern == 'same':
-        x = np.linspace(*x_range, s).repeat(d).reshape(s, d).astype(np.float32)
+        x = np.linspace(*x_range, s)
+        x = set(x)
+        for val in [-1.0, 1.0, 0.0]:
+            find_replace_closest_number(x, val)
+        x = list(x)
+        x.sort()
+        x = np.array(x).repeat(d).reshape(s, d).astype(np.float32)
         for i in range(n):
             a = np.random.choice([-1.0, 1.0]).astype(np.float32)
             eps = np.array(noise_dist.sample())
