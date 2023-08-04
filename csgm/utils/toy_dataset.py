@@ -63,8 +63,8 @@ def get_conditional_dataset(name,
 
         ntrain = nsamples // 10 * 9
 
-        return (TensorDataset(data[:ntrain,
-                                   ...]), TensorDataset(data[ntrain:, ...]))
+        return (TensorDataset(data[:ntrain, ...]),
+                TensorDataset(data[ntrain:, ...]), x_normalizer, y_normalizer)
     else:
         raise ValueError(f"Unknown dataset: {name}")
 

@@ -15,5 +15,8 @@
     "nlayers": 4,
     "cuda": 0,
     "seed": 0,
-    "phase": "train"
+    "phase": "train",
+    "testing_epoch": -1,
+    "testing_nsamples": 1024,
+    "test_idx": -1
 }

@@ -6,9 +6,10 @@ import numpy as np
 
 from csgm import NoiseScheduler, ConditionalScoreModel2D
 from csgm.utils import (get_conditional_dataset, make_experiment_name,
+                        plot_seismic_imaging_results,
                         plot_toy_conditional_example_results, checkpointsdir,
-                        query_experiments, CustomLRScheduler, save_exp_to_h5,
-                        load_exp_from_h5, make_grid)
+                        plotsdir, query_experiments, CustomLRScheduler,
+                        save_exp_to_h5, load_exp_from_h5, make_grid)
 
 CONFIG_FILE = 'seismic_imaging_conditional.json'
 
@@ -29,10 +30,11 @@ def train(args):
         device = torch.device('cpu')
 
     # Load the dataset.
-    dset_train, dset_val = get_conditional_dataset(args.dataset,
-                                                   n_val=args.val_batchsize,
-                                                   input_size=args.input_size,
-                                                   device=device)
+    dset_train, dset_val, x_normalizer, y_normalizer = get_conditional_dataset(
+        args.dataset,
+        n_val=args.val_batchsize,
+        input_size=args.input_size,
+        device=device)
 
     grid_train = make_grid(dset_val.tensors[0].shape[2:]).to(device).repeat(
         args.batchsize, 1, 1, 1)
@@ -141,12 +143,9 @@ def train(args):
 
                     # Progress bar.
                     pb.set_postfix({
-                        'epoch':
-                        epoch,
-                        'train obj':
-                        "{:.2f}".format(train_obj[-1]),
-                        'val obj':
-                        "{:.2f}".format(val_obj[-1])
+                        'epoch': epoch,
+                        'train obj': "{:.2f}".format(train_obj[-1]),
+                        'val obj': "{:.2f}".format(val_obj[-1])
                     })
 
             # Save the current network parameters, optimizer state variables,
@@ -162,41 +161,108 @@ def train(args):
                         'args': args
                     },
                     os.path.join(checkpointsdir(args.experiment),
-                                'checkpoint_' + str(epoch) + '.pth'))
+                                 'checkpoint_' + str(epoch) + '.pth'))
 
     elif args.phase == 'test':
-        model.load_state_dict(
-            torch.load(
-                os.path.join(checkpointsdir(args.experiment), 'checkpoint_' +
-                             str(args.max_epochs - 1) + '.pth')))
-        # train_obj, val_obj = load_exp_from_h5(
-        #     os.path.join(checkpointsdir(args.experiment), 'checkpoint.h5'),
-        #     'train_obj', 'val_obj')
-        model.eval()
-        # with torch.no_grad():
-        #     # Sample intermediate results.
-        #     test_conditioning_input = [dset_val[0:1, 1, :]]
-        #     timesteps = list(
-        #         torch.arange(len(noise_scheduler),
-        #                      device=device,
-        #                      dtype=torch.int))[::-1]
-        #     for j, c_input in enumerate(test_conditioning_input):
-        #         sample = torch.randn(args.val_batchsize,
-        #                              args.input_size,
-        #                              device=device)
-        #         # from IPython import embed; embed()
-        #         c_input = c_input.repeat(args.val_batchsize, 1)
-        #         for i, t in enumerate(tqdm(timesteps)):
-        #             t = t.repeat(args.val_batchsize)
-        #             with torch.no_grad():
 
-        #                 residual = model(sample, c_input, t, grid_val)
-        #                 sample = noise_scheduler.step(residual, t[0], sample)
-        #         intermediate_samples[j].append(sample.cpu().numpy())
+        file_to_load = os.path.join(
+            checkpointsdir(args.experiment),
+            'checkpoint_' + str(args.testing_epoch) + '.pth')
+
+        # from IPython import embed
+        # embed()
+
+        if os.path.isfile(file_to_load):
+            if device == torch.device('cpu'):
+                checkpoint = torch.load(file_to_load, map_location='cpu')
+            else:
+                checkpoint = torch.load(file_to_load)
+
+            model.load_state_dict(checkpoint['model_state_dict'])
+            train_obj = checkpoint["train_obj"]
+            val_obj = checkpoint["val_obj"]
+
+            assert args.testing_epoch == checkpoint["epoch"]
+
+        model.eval()
+        model.to(device)
+        sample_list = []
+        with torch.no_grad():
+            # Sample intermediate results.
+            if args.test_idx == -1:
+                args.test_idx = np.random.randint(dset_val.tensors[0].shape[0])
+            test_conditioning_input = dset_val.tensors[0][
+                args.test_idx, 1, ...].unsqueeze(0).to(device)
+
+            timesteps = list(
+                torch.arange(len(noise_scheduler),
+                             device=device,
+                             dtype=torch.int))[::-1]
+
+            test_conditioning_input = test_conditioning_input.repeat(
+                args.val_batchsize, 1, 1, 1)
+
+            # Setup the batch index generator.
+            sample_idx_loader = torch.utils.data.DataLoader(
+                range(args.testing_nsamples),
+                batch_size=args.val_batchsize,
+                shuffle=False,
+                drop_last=True)
+
+            for idx in sample_idx_loader:
+                sample = torch.randn((args.val_batchsize, *args.input_size, 1),
+                                     device=device)
+
+                for i, t in enumerate(tqdm(timesteps)):
+                    t = t.repeat(args.val_batchsize)
+
+                    residual = model(sample, test_conditioning_input, t,
+                                     grid_val)
+                    sample = noise_scheduler.step(residual, t[0], sample)
+                sample_list.append(sample)
+
+            sample_list = torch.cat(sample_list, dim=0)[..., 0].cpu()
+
+        sample_list = x_normalizer.unnormalize(sample_list.permute(
+            0, 2, 1)).permute(0, 2, 1).numpy()
+
+        true_image = x_normalizer.unnormalize(
+            dset_val.tensors[0][args.test_idx, 0, ...,
+                                0].unsqueeze(0).cpu().permute(
+                                    0, 2, 1)).permute(0, 2, 1).numpy()
+
+        rtm_image = y_normalizer.unnormalize(
+            dset_val.tensors[0][args.test_idx, 1, ...,
+                                0].unsqueeze(0).cpu().permute(
+                                    0, 2, 1)).permute(0, 2, 1).numpy()
+
+        # Save the results.
+        save_exp_to_h5(os.path.join(plotsdir(args.experiment), 'checkpoint_' +
+                                    str(args.test_idx) + '.h5'),
+                       args,
+                       train_obj=train_obj,
+                       val_obj=val_obj,
+                       sample_list=sample_list,
+                       true_image=true_image,
+                       rtm_image=rtm_image)
+
+    elif args.phase == 'plot':
+        data_dict = load_exp_from_h5(
+            os.path.join(plotsdir(args.experiment),
+                         'checkpoint_' + str(args.test_idx) + '.h5'),
+            'train_obj', 'val_obj', 'sample_list', 'true_image', 'rtm_image')
+
+        plot_seismic_imaging_results(args, data_dict['train_obj'],
+                                     data_dict['val_obj'],
+                                     data_dict['sample_list'],
+                                     data_dict['true_image'],
+                                     data_dict['rtm_image'], args.test_idx)
 
 
 if '__main__' == __name__:
 
     args_list = query_experiments(CONFIG_FILE)
     for args in args_list:
+        if args.testing_epoch == -1:
+            args.testing_epoch = args.max_epochs - 1
         train(args)
