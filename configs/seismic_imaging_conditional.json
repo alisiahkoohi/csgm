@@ -16,7 +16,7 @@
     "cuda": 0,
     "seed": 0,
     "phase": "train",
-    "testing_epoch": -1,
+    "testing_epoch": 300,
     "testing_nsamples": 1024,
     "test_idx": -1
 }

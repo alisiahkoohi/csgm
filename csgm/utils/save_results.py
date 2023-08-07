@@ -145,8 +145,6 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                     dpi=400)
         plt.close(fig)
 
-
-
     if args.plot_multi_res:
 
         colors = [
@@ -157,9 +155,9 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
         file = h5py.File(
             os.path.join(checkpointsdir(args.experiment),
                          'collected_samples.h5'), 'r')
-        # from IPython import embed; embed()
+
         for val in [-1.0, 0.0, 0.5]:
-            fig = plt.figure(figsize=(7, 3))
+            fig = plt.figure(figsize=(7, 2.5))
             index = find_index_closest_value(x_test[0, 1, :], val)
             ax = sns.kdeplot(x_test[:, 0, index],
                              fill=True,
@@ -175,22 +173,73 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                     file[str(input_size)][:, index],
                     fill=False,
                     bw_adjust=0.9,
-                    linewidth=0.9,
+                    linewidth=1.2,
                     color=colors[input_idx],
                     label=str(input_size),
                 )
 
-            plt.ylabel("Probability density function"),
+            plt.ylabel("Density function"),
             plt.xlim([-4, 4])
             plt.grid(True)
-            plt.legend(loc='upper left', ncols=2, fontsize=8)
-            plt.title(r"Conditional density, $y = %.2f$" % val)
+            plt.legend(loc='upper left', ncols=1, fontsize=11)
+            plt.title(r"$y = %.2f$" % val)
             plt.savefig(os.path.join(plotsdir(args.experiment),
                                      'marginal_val-{}.png'.format(val)),
                         format='png',
                         bbox_inches='tight',
                         dpi=400)
             plt.close(fig)
+
+        fig = plt.figure(figsize=(7, 2))
+        for i in range(64):
+            plt.plot(x_test[0, 1, :],
+                     x_test[i, 0, :],
+                     linewidth=0.9,
+                     color="#000000",
+                     label='_nolegend_' if i > 0 else 'True functions',
+                     alpha=0.4)
+        plt.legend(fontsize=10)
+        plt.grid(True)
+        plt.xlim([-3, 3])
+        plt.ylim([-9, 9])
+        plt.savefig(os.path.join(plotsdir(args.experiment),
+                                 'true_samples.png'),
+                    format='png',
+                    bbox_inches='tight',
+                    dpi=400)
+        plt.close(fig)
+
+        for input_idx, input_size in enumerate([20, 25, 30, 35, 40]):
+
+            fig = plt.figure(figsize=(7, 2))
+            for i in range(64):
+                plt.plot(
+                    file['x_' + str(input_size)][...],
+                    file[str(input_size)][i, :],
+                    linewidth=0.9,
+                    color=colors[input_idx],
+                    label='_nolegend_' if i > 0 else
+                    'Predicted functions (grid size {})'.format(input_size),
+                    alpha=0.4)
+                plt.plot(
+                    file['x_' + str(input_size)][...],
+                    file[str(input_size)][i, :],
+                    '.',
+                    markersize=1.2,
+                    color=colors[input_idx],
+                    alpha=0.4)
+            plt.legend(fontsize=10)
+            plt.grid(True)
+            plt.xlim([-3, 3])
+            plt.ylim([-9, 9])
+            plt.savefig(os.path.join(
+                plotsdir(args.experiment),
+                'posterior_samples_grid-size-' + str(input_size) + '.png'),
+                        format='png',
+                        bbox_inches='tight',
+                        dpi=400)
+            plt.close(fig)
+
         file.close()
 
 
@@ -440,32 +489,32 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
 
     horiz_loc = [10, 64, 128, 192, 245]
     for loc in horiz_loc:
-        fig = plt.figure("x_cm", figsize=(8, 2.5))
+        fig = plt.figure("x_cm", figsize=(3, 8))
         plt.plot(
+            samples_mean[0, :, loc][::-1],
             np.linspace(0.0, samples_mean.shape[2] * spacing[1] / 1e3,
-                        samples_mean.shape[2]),
-            samples_mean[0, :, loc],
+                        samples_mean.shape[2])[::-1],
             color="#31BFF3",
             label="Conditional mean",
             linewidth=1.0,
         )
         plt.plot(
+            true_image[0, :, loc][::-1],
             np.linspace(0.0, samples_mean.shape[2] * spacing[1] / 1e3,
-                        samples_mean.shape[2]),
-            true_image[0, :, loc],
+                        samples_mean.shape[2])[::-1],
             "--",
             color="k",
             alpha=0.5,
             label="Ground-trurh image",
             linewidth=1.0,
         )
-        plt.fill_between(
+        plt.fill_betweenx(
             np.linspace(0.0, samples_mean.shape[2] * spacing[1] / 1e3,
-                        samples_mean.shape[2]),
-            samples_mean[0, :, loc] -
-            2.576 * np.std(sample_list, axis=0)[:, loc],
-            samples_mean[0, :, loc] +
-            2.576 * np.std(sample_list, axis=0)[:, loc],
+                        samples_mean.shape[2])[::-1],
+            samples_mean[0, :, loc][::-1] -
+            2.576 * np.std(sample_list, axis=0)[:, loc][::-1],
+            samples_mean[0, :, loc][::-1] +
+            2.576 * np.std(sample_list, axis=0)[:, loc][::-1],
             color="#FFAF68",
             alpha=0.8,
             label="%99 confidence interval",
@@ -476,12 +525,12 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
         )
         plt.ticklabel_format(axis="y", style="sci", useMathText=True)
         plt.grid(True)
-        leg = plt.legend(loc="lower left", ncol=3, fontsize=8)
-        plt.title("Vertical profile at " + str(loc * spacing[1] / 1e3) + " km")
-        plt.ylabel("Perturbation")
-        plt.ylim([-1400, 1300])
-        plt.xlim([-0.05, samples_mean.shape[2] * spacing[1] / 1e3 + 0.05])
-        plt.xlabel("Depth (km)")
+        leg = plt.legend(loc="upper left", ncol=1, fontsize=8)
+        plt.title("Vertical profile at " + str(loc * spacing[1] / 1e3) + " km", fontsize=12)
+        plt.xlabel("Perturbation", fontsize=12)
+        plt.xlim([-1400, 1300][::-1])
+        plt.ylim([-0.3, samples_mean.shape[2] * spacing[1] / 1e3 + 0.05][::-1])
+        plt.ylabel("Depth (km)", fontsize=12)
         plt.savefig(os.path.join(plotsdir(args.experiment), str(test_idx),
                                  "vertical_profile_at_" + str(loc) + ".png"),
                     format="png",
@@ -503,3 +552,35 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
 
         for j in range(sample_list.shape[0]):
             f.write("SNR of sample " + str(j) + ": " + str(snr_list[j]) + "\n")
+
+    fig = plt.figure("x", figsize=(7.68, 4.8))
+
+    extracted_images = sample_list[100:120, 100:250, 5:25]
+    extracted_mean = samples_mean[0, 100:250, 5:25]
+    extracted_images = extracted_images - extracted_mean
+    extracted_images = extracted_images.transpose(1, 0, 2).reshape(150, -1)
+
+    sub_extent = np.array([0.0, 400 * spacing[0], 150 * spacing[1], 0.0]) / 1e3
+    plt.imshow(extracted_images,
+               vmin=-8e2,
+               vmax=8e2,
+               aspect="auto",
+               cmap="Greys",
+               resample=True,
+               interpolation="lanczos",
+               filterrad=1,
+               extent=sub_extent)
+    plt.title("Variations in posterior samples")
+    plt.colorbar(fraction=0.034, pad=0.01, format=sfmt)
+    plt.grid(False)
+    plt.ylabel("Depth (km)")
+    plt.savefig(os.path.join(plotsdir(args.experiment), str(test_idx),
+                             'zoom.png'),
+                format="png",
+                bbox_inches="tight",
+                dpi=400,
+                pad_inches=.02)
+    plt.close(fig)
+
+
+    from IPython import embed; embed()
