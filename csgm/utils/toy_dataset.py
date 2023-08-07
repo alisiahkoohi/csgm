@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import TensorDataset
 import os
 import h5py
+import random
 
 from .project_path import datadir
 from .normalizer import Normalizer
@@ -76,7 +77,34 @@ def find_replace_closest_number(some_set, k):
     return some_set
 
 
-def quadratic(n=200, s=15, d=1, x_range=(-3, 3), eval_pattern='same'):
+def optimal_jittered_sampling(interval, num_samples):
+    # Calculate the subinterval size
+    subinterval_size = (interval[1] - interval[0]) / num_samples
+
+    samples = []
+
+    for i in range(num_samples):
+        # Calculate the center of the current subinterval
+        center = interval[0] + (i + 0.5) * subinterval_size
+
+        # Add a random jitter within the subinterval
+        jitter = random.uniform(-subinterval_size / 2, subinterval_size / 2)
+        sample = center + jitter
+
+        # Ensure the sample is within the interval bounds
+        sample = max(interval[0], min(interval[1], sample))
+
+        samples.append(sample)
+
+    return np.array(samples).astype(np.float32)
+
+
+def quadratic(n=200,
+              s=15,
+              x_range=(-3, 3),
+              eval_pattern='jitter',
+              phase='train',
+              device='cpu'):
     """Creat quadratic toy dataset of pairs of coordinates and function values.
 
     This toy dataset is obtained from: https://arxiv.org/pdf/2209.14125.pdf.
@@ -96,26 +124,25 @@ def quadratic(n=200, s=15, d=1, x_range=(-3, 3), eval_pattern='same'):
     """
     data = []
     noise_dist = torch.distributions.gamma.Gamma(1.0, 2.5)
+    a_choices = torch.tensor([-1.0, 1.0], device=device)
     if eval_pattern == 'same':
         x = np.linspace(*x_range, s)
+    elif eval_pattern == 'jitter':
+        x = optimal_jittered_sampling(x_range, s)
+
+    if not phase == 'train':
         x = set(x)
-        for val in [-1.0, 1.0, 0.0]:
+        for val in [-1.0, 0.0, 0.5]:
             find_replace_closest_number(x, val)
         x = list(x)
         x.sort()
-        x = np.array(x).repeat(d).reshape(s, d).astype(np.float32)
-        for i in range(n):
-            a = np.random.choice([-1.0, 1.0]).astype(np.float32)
-            eps = np.array(noise_dist.sample())
-            y = a * x**2 + eps
-            data.append((x, y))
+        x = np.array(x)
 
-    if eval_pattern == 'same_size':
-        for i in range(n):
-            a = np.random.choice([-1.0, 1.0]).astype(np.float32)
-            eps = np.random.randn()
-            x = np.random.uniform(*x_range, size=(s, d)).astype(np.float32)
-            y = a * x**2 + eps
-            data.append((x, y))
+    x = torch.from_numpy(np.array(x).astype(np.float32)).reshape(
+        1, 1, -1).repeat(n, 1, 1).to(device)
+    a = a_choices[torch.randint(0, a_choices.size(0), (n, ),
+                                device=device)].reshape(-1, 1, 1)
+    eps = noise_dist.sample((n, 1)).reshape(-1, 1, 1).to(device)
+    y = a * x**2 + eps
 
-    return data
+    return torch.cat((y, x), dim=1)

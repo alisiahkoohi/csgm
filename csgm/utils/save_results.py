@@ -37,10 +37,9 @@ def find_index_closest_value(arr, value):
     return closest_index
 
 
-def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
-                                         intermediate_samples,
-                                         test_conditioning_input,
-                                         noise_scheduler):
+def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
+                                         sample_list):
+
     print('Saving model and samples\n')
     print('Model directory: ', checkpointsdir(args.experiment), '\n')
     print('Plots directory: ', plotsdir(args.experiment), '\n')
@@ -49,74 +48,58 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
             os.path.join(plotsdir(args.experiment), str(args.input_size))):
         os.mkdir(os.path.join(plotsdir(args.experiment), str(args.input_size)))
 
-    if len(train_obj) > 0 and len(val_obj) > 0:
-        train_obj = np.array(train_obj).reshape(-1,
-                                                args.max_epochs).mean(axis=0)
-        # Plot training objective.
-        fig = plt.figure(figsize=(7, 2.5))
-        plt.plot(np.linspace(0, args.max_epochs, len(val_obj)),
-                 np.array(val_obj),
-                 color="green",
-                 lw=1.0,
-                 alpha=0.6,
-                 label="validation")
-        ax = plt.gca()
-        ax.grid(True)
-        plt.legend()
-        plt.ylabel("Training objective")
-        plt.xlabel("Epochs")
-        ax.tick_params(axis='both', which='major', labelsize=10)
-        plt.savefig(os.path.join(plotsdir(args.experiment), "obj.png"),
-                    format="png",
-                    bbox_inches="tight",
-                    dpi=400,
-                    pad_inches=.02)
-        plt.close(fig)
+    fig = plt.figure("training logs", figsize=(7, 4))
+    plt.plot(np.linspace(0, args.testing_epoch + 1, (args.testing_epoch + 1) *
+                         len(train_obj) // (args.testing_epoch + 1)),
+             train_obj,
+             color="orange",
+             alpha=1.0,
+             label="training loss")
+    plt.plot(np.linspace(0, args.testing_epoch + 1, args.testing_epoch + 1),
+             val_obj,
+             color="k",
+             alpha=0.8,
+             label="validation loss")
+    plt.ticklabel_format(axis="y", style="sci", useMathText=True)
+    plt.title("Training and validation objective values")
+    plt.ylabel("Objective function")
+    plt.xlabel("Epochs")
+    plt.legend()
+    plt.savefig(os.path.join(plotsdir(args.experiment), "log.png"),
+                format="png",
+                bbox_inches="tight",
+                dpi=400,
+                pad_inches=.02)
+    plt.close(fig)
 
-    for key, value in intermediate_samples.items():
-        intermediate_samples[key] = np.stack(value)
+    x_test = x_test.cpu().numpy()
 
-    with torch.no_grad():
-        true_samples = []
-
-        for i, c_in in enumerate(test_conditioning_input):
-            data = np.array(
-                quadratic(n=args.val_batchsize * 5, s=args.input_size))[..., 0]
-            data[:, [0, 1], :] = data[:, [1, 0], :]
-            true_samples.append(data)
-        true_samples = np.array(true_samples)
-        true_samples = np.transpose(true_samples, (0, 2, 1, 3))
-
-    for j, (key, value) in enumerate(intermediate_samples.items()):
-        for i, sample in enumerate(value):
-            fig = plt.figure(figsize=(7, 3), dpi=200)
-            for k in range(64):
-                plt.plot(
-                    test_conditioning_input[j][0, :].detach().cpu().numpy(),
-                    sample[k, :],
-                    linewidth=0.9,
-                    color="#698C9E",
-                    label='_nolegend_' if k > 0 else 'Predicted functions',
-                    alpha=0.6)
-            plt.legend(fontsize=12)
-            plt.grid(True)
-            plt.xlim([-3, 3])
-            plt.ylim([-9, 9])
-            plt.savefig(os.path.join(
-                plotsdir(args.experiment), str(args.input_size),
-                'posterior_test-data-{}_stage-{}.png'.format(j, i)),
-                        format='png',
-                        bbox_inches='tight',
-                        dpi=400)
-            plt.close(fig)
+    fig = plt.figure(figsize=(7, 3))
+    for i in range(64):
+        plt.plot(x_test[0, 1, :],
+                 sample_list[i, :],
+                 linewidth=0.9,
+                 color="#698C9E",
+                 label='_nolegend_' if i > 0 else 'Predicted functions',
+                 alpha=0.6)
+    plt.legend(fontsize=12)
+    plt.grid(True)
+    plt.xlim([-3, 3])
+    plt.ylim([-9, 9])
+    plt.savefig(os.path.join(plotsdir(args.experiment), str(args.input_size),
+                             'posterior_samples.png'),
+                format='png',
+                bbox_inches='tight',
+                dpi=400)
+    plt.close(fig)
 
     fig = plt.figure(figsize=(7, 3), dpi=200)
-    for k in range(100):
-        plt.plot(true_samples[0][1, k, :],
-                 true_samples[0][0, k, :],
+    for i in range(64):
+        plt.plot(x_test[0, 1, :],
+                 x_test[i, 0, :],
                  linewidth=0.9,
                  color="#C64D4D",
-                 label='_nolegend_' if k > 0 else 'True function samples',
+                 label='_nolegend_' if i > 0 else 'True function samples',
                  alpha=0.6)
     plt.legend(fontsize=12)
     plt.grid(True)
@@ -133,35 +116,36 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
     font_prop = matplotlib.font_manager.FontProperties(family='serif',
                                                        style='normal',
                                                        size=10)
-    for j, (key, value) in enumerate(intermediate_samples.items()):
-        for i, sample in enumerate(value):
-            for k_idx, k in enumerate([8, 12, 16]):
-                fig = plt.figure(figsize=(7, 3))
-                ax = sns.kdeplot(
-                    sample[:, k],
-                    fill=True,
-                    bw_adjust=0.9,
-                    color="#698C9E",
-                    label='Predicted functions',
-                )
-                ax = sns.kdeplot(true_samples[0][0, :, k],
-                                 fill=False,
-                                 bw_adjust=0.9,
-                                 color="#C64D4D",
-                                 label='True function samples')
-                plt.ylabel("Probability density function"),
-                plt.xlim([-12, 12])
-                plt.grid(True)
-                plt.legend(loc='upper right', ncols=1, fontsize=10)
-                plt.title(r"Conditional density, $x = %.2f$" %
-                          test_conditioning_input[j][0, k])
-                plt.savefig(os.path.join(
-                    plotsdir(args.experiment), str(args.input_size),
-                    'marginal_test-data-{}_stage-{}-x-{}.png'.format(j, i, k)),
-                            format='png',
-                            bbox_inches='tight',
-                            dpi=400)
-                plt.close(fig)
+
+    for val in [-1.0, 0.0, 1.0]:
+        k = find_index_closest_value(x_test[0, 1, :], val)
+        fig = plt.figure(figsize=(7, 3))
+        ax = sns.kdeplot(
+            sample_list[:, k],
+            fill=True,
+            bw_adjust=0.9,
+            color="#698C9E",
+            label='Predicted functions',
+        )
+        ax = sns.kdeplot(x_test[:, 0, k],
+                         fill=False,
+                         bw_adjust=0.9,
+                         color="#C64D4D",
+                         label='True function samples')
+        plt.ylabel("Probability density function"),
+        plt.xlim([-12, 12])
+        plt.grid(True)
+        plt.legend(loc='upper right', ncols=1, fontsize=10)
+        plt.title(r"Conditional density, $x = %.2f$" % val)
+        plt.savefig(os.path.join(plotsdir(args.experiment),
+                                 str(args.input_size),
+                                 'marginal_idx-{}.png'.format(k)),
+                    format='png',
+                    bbox_inches='tight',
+                    dpi=400)
+        plt.close(fig)
+
+
 
     if args.plot_multi_res:
 
@@ -173,16 +157,16 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
         file = h5py.File(
             os.path.join(checkpointsdir(args.experiment),
                          'collected_samples.h5'), 'r')
-
-        for val in [-1.0, 0.0, 1.0]:
+        # from IPython import embed; embed()
+        for val in [-1.0, 0.0, 0.5]:
             fig = plt.figure(figsize=(7, 3))
-            index = find_index_closest_value(true_samples[0][1, 0, :], val)
-            ax = sns.kdeplot(true_samples[0][0, :, index],
+            index = find_index_closest_value(x_test[0, 1, :], val)
+            ax = sns.kdeplot(x_test[:, 0, index],
                              fill=True,
                              bw_adjust=0.9,
                              color="#000000",
                              label='True density')
-            for input_idx, input_size in enumerate([20, 25, 30, 40, 50]):
+            for input_idx, input_size in enumerate([20, 25, 30, 35, 40]):
 
                 index = find_index_closest_value(
                     file['x_' + str(input_size)][...], val)
@@ -197,11 +181,10 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, dataset,
                 )
 
             plt.ylabel("Probability density function"),
-            plt.xlim([-2, 5])
+            plt.xlim([-4, 4])
             plt.grid(True)
-            plt.legend(loc='upper right', ncols=2, fontsize=10)
-            plt.title(r"Conditional density, $x = %.2f$" %
-                      test_conditioning_input[j][0, k])
+            plt.legend(loc='upper left', ncols=2, fontsize=8)
+            plt.title(r"Conditional density, $y = %.2f$" % val)
             plt.savefig(os.path.join(plotsdir(args.experiment),
                                      'marginal_val-{}.png'.format(val)),
                         format='png',
