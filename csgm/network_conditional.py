@@ -2,23 +2,9 @@
 
 import torch
 from torch import nn
-from typing import Optional
 
 from .fourier_neural_operator import (FourierNeuralOperator1D,
                                       FourierNeuralOperator2D)
-
-
-class Block(nn.Module):
-
-    def __init__(self, size: int):
-        super().__init__()
-
-        self.ff = nn.Linear(size, size)
-        self.bn = nn.BatchNorm1d(size)
-        self.act = nn.GELU()
-
-    def forward(self, x: torch.Tensor):
-        return x + self.act(self.bn(self.ff(x)))
 
 
 class ConditionalScoreModel1D(nn.Module):
@@ -58,7 +44,8 @@ class ConditionalScoreModel2D(nn.Module):
                                                nlayers)
 
     def forward(self, x, y, t, grid):
-        t = t.reshape(-1, 1, 1, 1).repeat(1, x.shape[1], x.shape[2], 1) / self.nt * 2.0 - 1.0
+        t = t.reshape(-1, 1, 1, 1).repeat(1, x.shape[1], x.shape[2],
+                                          1) / self.nt * 2.0 - 1.0
         z = torch.cat((x, y, t, grid), dim=-1)
         z = self.network(z)
         return z

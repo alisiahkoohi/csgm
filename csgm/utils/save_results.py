@@ -1,6 +1,4 @@
-import torch
 import os
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 import seaborn as sns
@@ -10,7 +8,6 @@ from scipy.signal import hilbert
 import h5py
 
 from .project_path import checkpointsdir, plotsdir
-from .toy_dataset import quadratic
 
 sns.set_style("whitegrid")
 font = {'family': 'serif', 'style': 'normal', 'size': 12}
@@ -113,10 +110,6 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                 pad_inches=.02)
     plt.close(fig)
 
-    font_prop = matplotlib.font_manager.FontProperties(family='serif',
-                                                       style='normal',
-                                                       size=10)
-
     for val in [-1.0, 0.0, 1.0]:
         k = find_index_closest_value(x_test[0, 1, :], val)
         fig = plt.figure(figsize=(7, 3))
@@ -132,7 +125,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                          bw_adjust=0.9,
                          color="#C64D4D",
                          label='True function samples')
-        plt.ylabel("Probability density function"),
+        plt.ylabel("Probability density function")
         plt.xlim([-12, 12])
         plt.grid(True)
         plt.legend(loc='upper right', ncols=1, fontsize=10)
@@ -178,7 +171,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                     label=str(input_size),
                 )
 
-            plt.ylabel("Density function"),
+            plt.ylabel("Density function")
             plt.xlim([-4, 4])
             plt.grid(True)
             plt.legend(loc='upper left', ncols=1, fontsize=11)
@@ -221,13 +214,12 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                     label='_nolegend_' if i > 0 else
                     'Predicted functions (grid size {})'.format(input_size),
                     alpha=0.4)
-                plt.plot(
-                    file['x_' + str(input_size)][...],
-                    file[str(input_size)][i, :],
-                    '.',
-                    markersize=1.2,
-                    color=colors[input_idx],
-                    alpha=0.4)
+                plt.plot(file['x_' + str(input_size)][...],
+                         file[str(input_size)][i, :],
+                         '.',
+                         markersize=1.2,
+                         color=colors[input_idx],
+                         alpha=0.4)
             plt.legend(fontsize=10)
             plt.grid(True)
             plt.xlim([-3, 3])
@@ -526,7 +518,8 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
         plt.ticklabel_format(axis="y", style="sci", useMathText=True)
         plt.grid(True)
         leg = plt.legend(loc="upper left", ncol=1, fontsize=8)
-        plt.title("Vertical profile at " + str(loc * spacing[1] / 1e3) + " km", fontsize=12)
+        plt.title("Vertical profile at " + str(loc * spacing[1] / 1e3) + " km",
+                  fontsize=12)
         plt.xlabel("Perturbation", fontsize=12)
         plt.xlim([-1400, 1300][::-1])
         plt.ylim([-0.3, samples_mean.shape[2] * spacing[1] / 1e3 + 0.05][::-1])
@@ -544,43 +537,12 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
     rtm_image_snr = signal_to_noise(rtm_image[0, ...] / 204, true_image[0,
                                                                         ...])
 
-    with open(
-            os.path.join(plotsdir(args.experiment), str(test_idx),
-                         "snr-values.txt"), "w") as f:
+    with open(os.path.join(plotsdir(args.experiment), str(test_idx),
+                           "snr-values.txt"),
+              "w",
+              encoding="utf-8") as f:
         f.write("SNR of conditional mean: " + str(samples_mean_snr) + "\n")
         f.write("SNR of RTM image: " + str(rtm_image_snr) + "\n")
 
         for j in range(sample_list.shape[0]):
             f.write("SNR of sample " + str(j) + ": " + str(snr_list[j]) + "\n")
-
-    fig = plt.figure("x", figsize=(7.68, 4.8))
-
-    extracted_images = sample_list[100:120, 100:250, 5:25]
-    extracted_mean = samples_mean[0, 100:250, 5:25]
-    extracted_images = extracted_images - extracted_mean
-    extracted_images = extracted_images.transpose(1, 0, 2).reshape(150, -1)
-
-    sub_extent = np.array([0.0, 400 * spacing[0], 150 * spacing[1], 0.0]) / 1e3
-    plt.imshow(extracted_images,
-               vmin=-8e2,
-               vmax=8e2,
-               aspect="auto",
-               cmap="Greys",
-               resample=True,
-               interpolation="lanczos",
-               filterrad=1,
-               extent=sub_extent)
-    plt.title("Variations in posterior samples")
-    plt.colorbar(fraction=0.034, pad=0.01, format=sfmt)
-    plt.grid(False)
-    plt.ylabel("Depth (km)")
-    plt.savefig(os.path.join(plotsdir(args.experiment), str(test_idx),
-                             'zoom.png'),
-                format="png",
-                bbox_inches="tight",
-                dpi=400,
-                pad_inches=.02)
-    plt.close(fig)
-
-
-    from IPython import embed; embed()

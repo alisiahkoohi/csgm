@@ -42,7 +42,7 @@ def load_exp_from_h5(path, *args):
         data_dict = {}
         # Load the specified data and add it to the dictionary.
         for key in args:
-            if isinstance(file[key], h5py._hl.group.Group):
+            if isinstance(file[key], h5py._hl.group.Group): # pylint: disable=protected-access
                 inner_dict = {}
                 for k in file[key].keys():
                     inner_dict[k] = file[key][k][...]

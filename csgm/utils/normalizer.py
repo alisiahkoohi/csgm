@@ -2,7 +2,7 @@ import torch
 from typing import Optional
 
 
-class Normalizer(object):
+class Normalizer():
     """Normalizer a tensor image with training mean and standard deviation.
 
     Extracts the mean and standard deviation from the training dataset, and uses

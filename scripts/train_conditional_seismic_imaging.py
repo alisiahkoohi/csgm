@@ -1,3 +1,4 @@
+# pylint: disable=E1102
 import os
 import torch
 from torch.utils.data import DataLoader
@@ -5,11 +6,10 @@ from tqdm import tqdm
 import numpy as np
 
 from csgm import NoiseScheduler, ConditionalScoreModel2D
-from csgm.utils import (get_conditional_dataset, make_experiment_name,
-                        plot_seismic_imaging_results,
-                        plot_toy_conditional_example_results, checkpointsdir,
-                        plotsdir, query_experiments, CustomLRScheduler,
-                        save_exp_to_h5, load_exp_from_h5, make_grid)
+from csgm.utils import (get_seismic_dataset, make_experiment_name,
+                        plot_seismic_imaging_results, checkpointsdir, plotsdir,
+                        query_experiments, CustomLRScheduler, save_exp_to_h5,
+                        load_exp_from_h5, make_grid)
 
 CONFIG_FILE = 'seismic_imaging_conditional.json'
 
@@ -30,11 +30,7 @@ def train(args):
         device = torch.device('cpu')
 
     # Load the dataset.
-    dset_train, dset_val, x_normalizer, y_normalizer = get_conditional_dataset(
-        args.dataset,
-        n_val=args.val_batchsize,
-        input_size=args.input_size,
-        device=device)
+    dset_train, dset_val, x_normalizer, y_normalizer = get_seismic_dataset()
 
     grid_train = make_grid(dset_val.tensors[0].shape[2:]).to(device).repeat(
         args.batchsize, 1, 1, 1)
@@ -74,7 +70,6 @@ def train(args):
     scheduler = CustomLRScheduler(optimizer, args.lr, args.lr_final,
                                   args.max_epochs)
     # Some placeholders.
-    intermediate_samples = {0: []}
     train_obj = []
     val_obj = []
 
@@ -87,13 +82,11 @@ def train(args):
                 var_obj_step = 0.0
                 for x_val in val_dataloader:
                     x_val0 = x_val[0].to(device)
-
                     noise = torch.randn(x_val0[:, 0, ...].shape, device=device)
                     timesteps = torch.randint(0,
                                               len(noise_scheduler),
                                               (x_val0.shape[0], ),
                                               device=device).long()
-
                     x_valt = noise_scheduler.add_noise(x_val0[:, 0, ...],
                                                        noise, timesteps)
                     noise_pred = model(x_valt, x_val0[:, 1, ...], timesteps,
@@ -129,7 +122,6 @@ def train(args):
                     # Predict the score at this noise level.
                     noise_pred = model(xt, x0[:, 1, ...], timesteps,
                                        grid_train)
-                    # from IPython import embed; embed()
 
                     # Score matching objective.
                     obj = (1 / x0.shape[0]) * torch.norm(noise_pred - noise)**2
@@ -169,9 +161,6 @@ def train(args):
             checkpointsdir(args.experiment),
             'checkpoint_' + str(args.testing_epoch) + '.pth')
 
-        # from IPython import embed
-        # embed()
-
         if os.path.isfile(file_to_load):
             if device == torch.device('cpu'):
                 checkpoint = torch.load(file_to_load, map_location='cpu')
@@ -202,35 +191,27 @@ def train(args):
             test_conditioning_input = test_conditioning_input.repeat(
                 args.val_batchsize, 1, 1, 1)
 
-            # Setup the batch index generator.
-            sample_idx_loader = torch.utils.data.DataLoader(
-                range(args.testing_nsamples),
-                batch_size=args.val_batchsize,
-                shuffle=False,
-                drop_last=True)
-
-            for idx in sample_idx_loader:
+            for _ in torch.utils.data.DataLoader(range(args.testing_nsamples),
+                                                 batch_size=args.val_batchsize,
+                                                 shuffle=False,
+                                                 drop_last=True):
                 sample = torch.randn((args.val_batchsize, *args.input_size, 1),
                                      device=device)
-
-                for i, t in enumerate(tqdm(timesteps)):
-                    t = t.repeat(args.val_batchsize)
-
-                    residual = model(sample, test_conditioning_input, t,
+                for timestep in tqdm(timesteps):
+                    timestep = timestep.repeat(args.val_batchsize)
+                    residual = model(sample, test_conditioning_input, timestep,
                                      grid_val)
-                    sample = noise_scheduler.step(residual, t[0], sample)
+                    sample = noise_scheduler.step(residual, timestep[0],
+                                                  sample)
                 sample_list.append(sample)
-
             sample_list = torch.cat(sample_list, dim=0)[..., 0].cpu()
 
         sample_list = x_normalizer.unnormalize(sample_list.permute(
             0, 2, 1)).permute(0, 2, 1).numpy()
-
         true_image = x_normalizer.unnormalize(
             dset_val.tensors[0][args.test_idx, 0, ...,
                                 0].unsqueeze(0).cpu().permute(
                                     0, 2, 1)).permute(0, 2, 1).numpy()
-
         rtm_image = y_normalizer.unnormalize(
             dset_val.tensors[0][args.test_idx, 1, ...,
                                 0].unsqueeze(0).cpu().permute(

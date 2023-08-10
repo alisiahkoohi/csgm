@@ -1,6 +1,8 @@
+from typing import Sequence
+
 import numpy as np
 import torch
-from typing import Sequence
+
 
 def make_grid(spatial_dim: Sequence[int]) -> torch.Tensor:
     """Make the grid of coordinates for the Fourier neural operator input.

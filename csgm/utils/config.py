@@ -4,7 +4,7 @@ import json
 
 def read_config(filename):
     """Read input variables and values from a json file."""
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         configs = json.load(f)
     return configs
 

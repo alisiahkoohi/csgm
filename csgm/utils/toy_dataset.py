@@ -1,73 +1,55 @@
 """Inspired by from https://github.com/tanelp/tiny-diffusion."""
 
+import os
+import random
+
 import numpy as np
 import torch
+import h5py
 
 from torch.utils.data import TensorDataset
-import os
-import h5py
-import random
 
 from .project_path import datadir
 from .normalizer import Normalizer
 
 
-def get_conditional_dataset(name,
-                            n=8000,
-                            n_val=1024,
-                            input_size=2,
-                            device="cpu"):
+def get_seismic_dataset():
 
-    if name == 'quadratic':
-        samples = torch.zeros((n + n_val, 2, 1), dtype=torch.float)
+    # Define data directory
+    data_path = os.path.join(datadir("training-data"), "training-pairs.h5")
 
-        with torch.no_grad():
-            data = np.array(quadratic(n=n + n_val, s=input_size))[..., 0]
-            data[:, [0, 1], :] = data[:, [1, 0], :]
-            data = torch.from_numpy(data.astype(np.float32)).to(device)
-            # from IPython import embed; embed()
-        return (TensorDataset(data[:n, ...]), TensorDataset(data[-n_val:,
-                                                                 ...]))
+    # Download the dataset into the data directory if it does not exist
+    if not os.path.isfile(data_path):
+        os.system("wget https://www.dropbox.com/s/53u8ckb9aje8xv4/"
+                  "training-pairs.h5 --no-check-certificate -O" + data_path)
 
-    elif name == "seismic":
-        # Define data directory
-        data_path = os.path.join(datadir("training-data"), "training-pairs.h5")
+    # Load seismic images and create training and testing data
+    file = h5py.File(data_path, 'r')
+    x = torch.from_numpy(file['dm'][...])
+    y = torch.from_numpy(file['rtm'][...])
+    file.close()
 
-        # Download the dataset into the data directory if it does not exist
-        if not os.path.isfile(data_path):
-            os.system("wget https://www.dropbox.com/s/53u8ckb9aje8xv4/"
-                      "training-pairs.h5 --no-check-certificate -O" +
-                      data_path)
+    # Zero out water layer.
+    y[..., :10] = 0.0
 
-        # Load seismic images and create training and testing data
-        file = h5py.File(data_path, 'r')
-        x = torch.from_numpy(file['dm'][...])
-        y = torch.from_numpy(file['rtm'][...])
-        file.close()
+    # Normalize the seismic images in the training data.
+    x_normalizer = Normalizer(x)
+    x = x_normalizer.normalize(x)
 
-        # Zero out water layer.
-        y[..., :10] = 0.0
+    # Normalize the seismic images in the training data.
+    y_normalizer = Normalizer(y)
+    y = y_normalizer.normalize(y)
 
-        # Normalize the seismic images in the training data.
-        x_normalizer = Normalizer(x)
-        x = x_normalizer.normalize(x)
+    nsamples = x.shape[0]
+    perm_idxs = torch.randperm(nsamples)
+    x = x[perm_idxs, ...].permute(0, 1, 3, 2).unsqueeze(-1)
+    y = y[perm_idxs, ...].permute(0, 1, 3, 2).unsqueeze(-1)
+    data = torch.cat((x, y), dim=1)
 
-        # Normalize the seismic images in the training data.
-        y_normalizer = Normalizer(y)
-        y = y_normalizer.normalize(y)
+    ntrain = nsamples // 10 * 9
 
-        nsamples = x.shape[0]
-        perm_idxs = torch.randperm(nsamples)
-        x = x[perm_idxs, ...].permute(0, 1, 3, 2).unsqueeze(-1)
-        y = y[perm_idxs, ...].permute(0, 1, 3, 2).unsqueeze(-1)
-        data = torch.cat((x, y), dim=1)
-
-        ntrain = nsamples // 10 * 9
-
-        return (TensorDataset(data[:ntrain, ...]),
-                TensorDataset(data[ntrain:, ...]), x_normalizer, y_normalizer)
-    else:
-        raise ValueError(f"Unknown dataset: {name}")
+    return (TensorDataset(data[:ntrain, ...]),
+            TensorDataset(data[ntrain:, ...]), x_normalizer, y_normalizer)
 
 
 def find_replace_closest_number(some_set, k):
@@ -122,7 +104,6 @@ def quadratic(n=200,
         the first array being the coordinates and the second array being the
         function values.
     """
-    data = []
     noise_dist = torch.distributions.gamma.Gamma(1.0, 2.5)
     a_choices = torch.tensor([-1.0, 1.0], device=device)
     if eval_pattern == 'same':
@@ -130,7 +111,7 @@ def quadratic(n=200,
     elif eval_pattern == 'jitter':
         x = optimal_jittered_sampling(x_range, s)
 
-    if not phase == 'train':
+    if phase != 'train':
         x = set(x)
         for val in [-1.0, 0.0, 0.5]:
             find_replace_closest_number(x, val)

@@ -1,6 +1,5 @@
 import itertools
 import os
-import subprocess
 
 from .project_path import configsdir
 from .config import parse_input_args, read_config

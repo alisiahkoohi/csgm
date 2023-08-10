@@ -2,7 +2,7 @@ import torch
 from typing import Optional
 
 
-class CustomLRScheduler(object):
+class CustomLRScheduler():
     """A custom learning rate scheduler.
     The learning rate is computed as `a * (b + t) ** gamma`, where `t` is the
     iteration number, `gamma` is the decay rate, and  `a, b` are chosen to

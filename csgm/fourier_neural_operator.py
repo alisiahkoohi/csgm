@@ -1,9 +1,8 @@
-# Partially based on https://github.com/zongyi-li/fourier_neural_operator and
-# https://github.com/tanelp/tiny-diffusion
+# Partially based on https://github.com/zongyi-li/fourier_neural_operator
+
+from typing import Optional
 
 import torch
-from torch import nn
-from typing import Optional, Tuple, List
 
 
 class FourierNeuralLayer1D(torch.nn.Module):

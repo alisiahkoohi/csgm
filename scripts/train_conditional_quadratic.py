@@ -1,15 +1,14 @@
+# pylint: disable=E1102
 import os
 import torch
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 import h5py
 
 from csgm import NoiseScheduler, ConditionalScoreModel1D
-from csgm.utils import (make_experiment_name, plot_seismic_imaging_results,
-                        plot_toy_conditional_example_results, checkpointsdir,
-                        plotsdir, query_experiments, CustomLRScheduler,
-                        save_exp_to_h5, load_exp_from_h5, quadratic)
+from csgm.utils import (plot_toy_conditional_example_results,
+                        make_experiment_name, checkpointsdir,
+                        query_experiments, CustomLRScheduler, quadratic)
 
 CONFIG_FILE = 'toy_example_conditional_quadratic.json'
 
@@ -55,7 +54,6 @@ def train(args):
     scheduler = CustomLRScheduler(optimizer, args.lr, args.lr_final,
                                   args.max_epochs)
     # Some placeholders.
-    intermediate_samples = {0: []}
     train_obj = []
     val_obj = []
 

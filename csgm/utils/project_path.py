@@ -6,12 +6,9 @@ Typical usage example:
 # checkpoints for experiment name stored in `experiment_name`.
 checkpointsdir(experiment_name)
 """
-
 import git
-import shutil
 import os
 from typing import Optional
-import subprocess
 
 
 def gitdir() -> str:
@@ -105,18 +102,3 @@ def configsdir(mkdir: Optional[bool] = True) -> str:
     if (not os.path.exists(path)) and mkdir:
         os.makedirs(path)
     return path
-
-
-def rm_cachedir(wildcard, path=os.path.join(gitdir(), 'srcsep/_cached_dir')):
-    """The absolute path to the configs directory.
-
-    Configurations directory, stores the default hyperparameter values for
-    various experiments.
-
-    Args:
-        mkdir: An optional boolean for whether to create the directory if it
-            does not exist.
-    """
-    command = ("find " + path + " -type d -name " + wildcard +
-               " -exec rm -rf {} +")
-    subprocess.Popen(command.split())
