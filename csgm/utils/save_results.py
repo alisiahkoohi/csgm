@@ -10,7 +10,7 @@ import h5py
 from .project_path import checkpointsdir, plotsdir
 
 sns.set_style("whitegrid")
-font = {'family': 'serif', 'style': 'normal', 'size': 12}
+font = {'family': 'serif', 'style': 'normal', 'size': 14}
 matplotlib.rc('font', **font)
 sfmt = matplotlib.ticker.ScalarFormatter(useMathText=True)
 sfmt.set_powerlimits((0, 0))
@@ -75,11 +75,11 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
     for i in range(64):
         plt.plot(x_test[0, 1, :],
                  sample_list[i, :],
-                 linewidth=0.9,
+                 linewidth=1.4,
                  color="#698C9E",
                  label='_nolegend_' if i > 0 else 'Predicted functions',
                  alpha=0.6)
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=14)
     plt.grid(True)
     plt.xlim([-3, 3])
     plt.ylim([-9, 9])
@@ -94,11 +94,11 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
     for i in range(64):
         plt.plot(x_test[0, 1, :],
                  x_test[i, 0, :],
-                 linewidth=0.9,
+                 linewidth=1.4,
                  color="#C64D4D",
                  label='_nolegend_' if i > 0 else 'True function samples',
                  alpha=0.6)
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=14)
     plt.grid(True)
     plt.xlim([-3, 3])
     plt.ylim([-9, 9])
@@ -113,13 +113,12 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
     for val in [-1.0, 0.0, 1.0]:
         k = find_index_closest_value(x_test[0, 1, :], val)
         fig = plt.figure(figsize=(7, 3))
-        ax = sns.kdeplot(
-            sample_list[:, k],
-            fill=True,
-            bw_adjust=0.9,
-            color="#698C9E",
-            label='Predicted functions',
-        )
+        ax = sns.kdeplot(sample_list[:, k],
+                         fill=True,
+                         bw_adjust=0.9,
+                         color="#698C9E",
+                         label='Predicted functions',
+                         linewidth=1.4)
         ax = sns.kdeplot(x_test[:, 0, k],
                          fill=False,
                          bw_adjust=0.9,
@@ -128,7 +127,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
         plt.ylabel("Probability density function")
         plt.xlim([-12, 12])
         plt.grid(True)
-        plt.legend(loc='upper right', ncols=1, fontsize=10)
+        plt.legend(loc='upper right', ncols=1, fontsize=14)
         plt.title(r"Conditional density, $x = %.2f$" % val)
         plt.savefig(os.path.join(plotsdir(args.experiment),
                                  str(args.input_size),
@@ -166,15 +165,15 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                     file[str(input_size)][:, index],
                     fill=False,
                     bw_adjust=0.9,
-                    linewidth=1.2,
+                    linewidth=1.4,
                     color=colors[input_idx],
                     label=str(input_size),
                 )
 
             plt.ylabel("Density function")
-            plt.xlim([-4, 4])
+            plt.xlim([-1.5, 4])
             plt.grid(True)
-            plt.legend(loc='upper left', ncols=1, fontsize=11)
+            plt.legend(loc='upper right', ncols=1, fontsize=13)
             plt.title(r"$y = %.2f$" % val)
             plt.savefig(os.path.join(plotsdir(args.experiment),
                                      'marginal_val-{}.png'.format(val)),
@@ -185,14 +184,16 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
 
         fig = plt.figure(figsize=(7, 2))
         for i in range(64):
-            plt.plot(x_test[0, 1, :],
-                     x_test[i, 0, :],
-                     linewidth=0.9,
-                     color="#000000",
-                     label='_nolegend_' if i > 0 else 'True functions',
-                     alpha=0.4)
-        plt.legend(fontsize=10)
+            plt.plot(
+                x_test[0, 1, :],
+                x_test[i, 0, :],
+                linewidth=1.2,
+                color="#000000",
+                #  label='_nolegend_' if i > 0 else 'True functions',
+                alpha=0.4)
+        # plt.legend(fontsize=14)
         plt.grid(True)
+        plt.title('True functions')
         plt.xlim([-3, 3])
         plt.ylim([-9, 9])
         plt.savefig(os.path.join(plotsdir(args.experiment),
@@ -206,21 +207,21 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
 
             fig = plt.figure(figsize=(7, 2))
             for i in range(64):
-                plt.plot(
-                    file['x_' + str(input_size)][...],
-                    file[str(input_size)][i, :],
-                    linewidth=0.9,
-                    color=colors[input_idx],
-                    label='_nolegend_' if i > 0 else
-                    'Predicted functions (grid size {})'.format(input_size),
-                    alpha=0.4)
+                plt.plot(file['x_' + str(input_size)][...],
+                         file[str(input_size)][i, :],
+                         linewidth=1.2,
+                         color=colors[input_idx],
+                         label='_nolegend_'
+                         if i > 0 else 'grid size {}'.format(input_size),
+                         alpha=0.4)
                 plt.plot(file['x_' + str(input_size)][...],
                          file[str(input_size)][i, :],
                          '.',
-                         markersize=1.2,
+                         markersize=2.2,
                          color=colors[input_idx],
                          alpha=0.4)
-            plt.legend(fontsize=10)
+            plt.legend(fontsize=14)
+            plt.title('Predicted functions')
             plt.grid(True)
             plt.xlim([-3, 3])
             plt.ylim([-9, 9])
@@ -237,6 +238,9 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
 
 def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
                                  true_image, rtm_image, test_idx):
+
+    font = {'family': 'serif', 'style': 'normal', 'size': 17}
+    matplotlib.rc('font', **font)
 
     print('\n Plots directory:', plotsdir(args.experiment), '\n')
     if not os.path.exists(
@@ -300,6 +304,42 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
         0.0, true_image.shape[1] * spacing[0],
         true_image.shape[2] * spacing[1], 0.0
     ]) / 1e3
+
+    v0 = np.ones(true_image.shape[1:], dtype=np.float32) * 2.5
+    v0 *= np.reshape(np.linspace(1.0, 4.5 / 2.5, v0.shape[1]),
+                     (1, v0.shape[1]))
+    s = 1.0 / v0
+    s[:, :10] = 1.0 / 1.5
+    m0 = s**2.0
+
+    fig = plt.figure("m0", figsize=(7.68, 4.8))
+    plt.imshow(
+        m0.T,
+        vmin=0.0,
+        vmax=0.2,
+        aspect=1,
+        cmap="YlGnBu",
+        resample=True,
+        interpolation="lanczos",
+        filterrad=1,
+        extent=extent,
+    )
+    plt.title("Smooth background model")
+    cb = plt.colorbar(fraction=0.03,
+                      pad=0.01,
+                      format=sfmt,
+                      ticks=np.arange(0.0, 0.2, 0.05))
+    # cb.set_label(label=r"$\frac{\mathrm{s}^2}{\mathrm{km}^2}$", fontsize=12)
+    plt.grid(False)
+    plt.xlabel("Horizontal distance (km)")
+    plt.ylabel("Depth (km)")
+    plt.savefig(os.path.join(plotsdir(args.experiment), str(test_idx),
+                             "background.png"),
+                format="png",
+                bbox_inches="tight",
+                dpi=400,
+                pad_inches=.02)
+    plt.close(fig)
 
     fig = plt.figure("x", figsize=(7.68, 4.8))
     plt.imshow(
@@ -388,7 +428,7 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
         norm=matplotlib.colors.LogNorm(vmin=6, vmax=90.0),
     )
     plt.title("Pointwise standard deviation")
-    plt.colorbar(fraction=0.03, pad=0.01, format=sfmt)
+    plt.colorbar(fraction=0.03, pad=0.01, format=sfmt, ticks=[6, 10.0, 90.0])
     plt.grid(False)
     plt.xlabel("Horizontal distance (km)")
     plt.ylabel("Depth (km)")
@@ -466,7 +506,7 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
         extent=extent,
         norm=matplotlib.colors.LogNorm(vmin=0.01, vmax=0.3),
     )
-    plt.title("Normalized pointwise standard deviation")
+    plt.title("Normalized standard deviation")
     plt.colorbar(fraction=0.03, pad=0.01, format=sfmt)
     plt.grid(False)
     plt.xlabel("Horizontal distance (km)")
@@ -479,28 +519,36 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
                 pad_inches=.02)
     plt.close(fig)
 
-    horiz_loc = [10, 64, 128, 192, 245]
-    for loc in horiz_loc:
-        fig = plt.figure("x_cm", figsize=(3, 8))
-        plt.plot(
+    font = {'family': 'serif', 'style': 'normal', 'size': 12}
+    matplotlib.rc('font', **font)
+
+    horiz_loc = [10, 245]
+    # Create a figure with two subplots side by side
+    fig, axs = plt.subplots(1, 2, figsize=(6, 12), sharey=True)
+
+    # Loop to create the two plots
+    for i, loc in enumerate(horiz_loc):
+        ax = axs[i]
+
+        ax.plot(
             samples_mean[0, :, loc][::-1],
             np.linspace(0.0, samples_mean.shape[2] * spacing[1] / 1e3,
                         samples_mean.shape[2])[::-1],
             color="#31BFF3",
             label="Conditional mean",
-            linewidth=1.0,
+            linewidth=1.3,
         )
-        plt.plot(
+        ax.plot(
             true_image[0, :, loc][::-1],
             np.linspace(0.0, samples_mean.shape[2] * spacing[1] / 1e3,
                         samples_mean.shape[2])[::-1],
             "--",
             color="k",
             alpha=0.5,
-            label="Ground-trurh image",
-            linewidth=1.0,
+            label="Ground-truth image",
+            linewidth=1.3,
         )
-        plt.fill_betweenx(
+        ax.fill_betweenx(
             np.linspace(0.0, samples_mean.shape[2] * spacing[1] / 1e3,
                         samples_mean.shape[2])[::-1],
             samples_mean[0, :, loc][::-1] -
@@ -515,22 +563,32 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
             linewidth=0.5,
             linestyle="solid",
         )
-        plt.ticklabel_format(axis="y", style="sci", useMathText=True)
-        plt.grid(True)
-        leg = plt.legend(loc="upper left", ncol=1, fontsize=8)
-        plt.title("Vertical profile at " + str(loc * spacing[1] / 1e3) + " km",
-                  fontsize=12)
-        plt.xlabel("Perturbation", fontsize=12)
-        plt.xlim([-1400, 1300][::-1])
-        plt.ylim([-0.3, samples_mean.shape[2] * spacing[1] / 1e3 + 0.05][::-1])
-        plt.ylabel("Depth (km)", fontsize=12)
-        plt.savefig(os.path.join(plotsdir(args.experiment), str(test_idx),
-                                 "vertical_profile_at_" + str(loc) + ".png"),
-                    format="png",
-                    bbox_inches="tight",
-                    dpi=400,
-                    pad_inches=.02)
-        plt.close(fig)
+        ax.ticklabel_format(axis="y", style="sci", useMathText=True)
+        ax.grid(True)
+        ax.set_title("Profile at " + str(loc * spacing[0] / 1e3) + " km",
+                     fontsize=14)
+        ax.set_xlabel("Perturbation", fontsize=14)
+        ax.set_xlim([-1400, 1300][::-1])
+        ax.set_ylim([-0.3,
+                     samples_mean.shape[2] * spacing[1] / 1e3 + 0.05][::-1])
+
+    axs[0].set_ylabel("Depth (km)", fontsize=14)
+
+    # Adjust the space between subplots
+    plt.subplots_adjust(wspace=0)
+
+    axs[1].legend(loc="upper left",
+                  ncol=1,
+                  fontsize=14,
+                  bbox_to_anchor=(-0.7, 1.0))
+
+    plt.savefig(os.path.join(plotsdir(args.experiment), str(test_idx),
+                             "vertical_profile.png"),
+                format="png",
+                bbox_inches="tight",
+                dpi=600,
+                pad_inches=.02)
+    plt.close(fig)
 
     samples_mean_snr = signal_to_noise(samples_mean[0, ...], true_image[0,
                                                                         ...])
