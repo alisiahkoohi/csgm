@@ -10,7 +10,7 @@ import h5py
 from .project_path import checkpointsdir, plotsdir
 
 sns.set_style("whitegrid")
-font = {'family': 'serif', 'style': 'normal', 'size': 12}
+font = {'family': 'serif', 'style': 'normal', 'size': 14}
 matplotlib.rc('font', **font)
 sfmt = matplotlib.ticker.ScalarFormatter(useMathText=True)
 sfmt.set_powerlimits((0, 0))
@@ -75,11 +75,11 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
     for i in range(64):
         plt.plot(x_test[0, 1, :],
                  sample_list[i, :],
-                 linewidth=0.9,
+                 linewidth=1.4,
                  color="#698C9E",
                  label='_nolegend_' if i > 0 else 'Predicted functions',
                  alpha=0.6)
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=14)
     plt.grid(True)
     plt.xlim([-3, 3])
     plt.ylim([-9, 9])
@@ -94,11 +94,11 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
     for i in range(64):
         plt.plot(x_test[0, 1, :],
                  x_test[i, 0, :],
-                 linewidth=0.9,
+                 linewidth=1.4,
                  color="#C64D4D",
                  label='_nolegend_' if i > 0 else 'True function samples',
                  alpha=0.6)
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=14)
     plt.grid(True)
     plt.xlim([-3, 3])
     plt.ylim([-9, 9])
@@ -119,6 +119,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
             bw_adjust=0.9,
             color="#698C9E",
             label='Predicted functions',
+            linewidth=1.4
         )
         ax = sns.kdeplot(x_test[:, 0, k],
                          fill=False,
@@ -128,7 +129,7 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
         plt.ylabel("Probability density function")
         plt.xlim([-12, 12])
         plt.grid(True)
-        plt.legend(loc='upper right', ncols=1, fontsize=10)
+        plt.legend(loc='upper right', ncols=1, fontsize=14)
         plt.title(r"Conditional density, $x = %.2f$" % val)
         plt.savefig(os.path.join(plotsdir(args.experiment),
                                  str(args.input_size),
@@ -166,15 +167,15 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                     file[str(input_size)][:, index],
                     fill=False,
                     bw_adjust=0.9,
-                    linewidth=1.2,
+                    linewidth=1.4,
                     color=colors[input_idx],
                     label=str(input_size),
                 )
 
             plt.ylabel("Density function")
-            plt.xlim([-4, 4])
+            plt.xlim([-1.5, 4])
             plt.grid(True)
-            plt.legend(loc='upper left', ncols=1, fontsize=11)
+            plt.legend(loc='upper right', ncols=1, fontsize=13)
             plt.title(r"$y = %.2f$" % val)
             plt.savefig(os.path.join(plotsdir(args.experiment),
                                      'marginal_val-{}.png'.format(val)),
@@ -187,12 +188,13 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
         for i in range(64):
             plt.plot(x_test[0, 1, :],
                      x_test[i, 0, :],
-                     linewidth=0.9,
+                     linewidth=1.2,
                      color="#000000",
-                     label='_nolegend_' if i > 0 else 'True functions',
+                    #  label='_nolegend_' if i > 0 else 'True functions',
                      alpha=0.4)
-        plt.legend(fontsize=10)
+        # plt.legend(fontsize=14)
         plt.grid(True)
+        plt.title('True functions')
         plt.xlim([-3, 3])
         plt.ylim([-9, 9])
         plt.savefig(os.path.join(plotsdir(args.experiment),
@@ -209,18 +211,19 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
                 plt.plot(
                     file['x_' + str(input_size)][...],
                     file[str(input_size)][i, :],
-                    linewidth=0.9,
+                    linewidth=1.2,
                     color=colors[input_idx],
                     label='_nolegend_' if i > 0 else
-                    'Predicted functions (grid size {})'.format(input_size),
+                    'grid size {}'.format(input_size),
                     alpha=0.4)
                 plt.plot(file['x_' + str(input_size)][...],
                          file[str(input_size)][i, :],
                          '.',
-                         markersize=1.2,
+                         markersize=2.2,
                          color=colors[input_idx],
                          alpha=0.4)
-            plt.legend(fontsize=10)
+            plt.legend(fontsize=14)
+            plt.title('Predicted functions')
             plt.grid(True)
             plt.xlim([-3, 3])
             plt.ylim([-9, 9])
@@ -237,6 +240,9 @@ def plot_toy_conditional_example_results(args, train_obj, val_obj, x_test,
 
 def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
                                  true_image, rtm_image, test_idx):
+
+    font = {'family': 'serif', 'style': 'normal', 'size': 17}
+    matplotlib.rc('font', **font)
 
     print('\n Plots directory:', plotsdir(args.experiment), '\n')
     if not os.path.exists(
@@ -300,6 +306,42 @@ def plot_seismic_imaging_results(args, train_obj, val_obj, sample_list,
         0.0, true_image.shape[1] * spacing[0],
         true_image.shape[2] * spacing[1], 0.0
     ]) / 1e3
+
+    v0 = np.ones(true_image.shape[1:], dtype=np.float32) * 2.5
+    v0 *= np.reshape(np.linspace(1.0, 4.5 / 2.5, v0.shape[1]),
+                     (1, v0.shape[1]))
+    s = 1.0 / v0
+    s[:, :10] = 1.0 / 1.5
+    m0 = s**2.0
+
+    fig = plt.figure("m0", figsize=(7.68, 4.8))
+    plt.imshow(
+        m0.T,
+        vmin=0.0,
+        vmax=0.2,
+        aspect=1,
+        cmap="YlGnBu",
+        resample=True,
+        interpolation="lanczos",
+        filterrad=1,
+        extent=extent,
+    )
+    plt.title("Smooth background model")
+    cb = plt.colorbar(fraction=0.03,
+                      pad=0.01,
+                      format=sfmt,
+                      ticks=np.arange(0.0, 0.2, 0.05))
+    # cb.set_label(label=r"$\frac{\mathrm{s}^2}{\mathrm{km}^2}$", fontsize=12)
+    plt.grid(False)
+    plt.xlabel("Horizontal distance (km)")
+    plt.ylabel("Depth (km)")
+    plt.savefig(os.path.join(plotsdir(args.experiment), str(test_idx),
+                             "background.png"),
+                format="png",
+                bbox_inches="tight",
+                dpi=400,
+                pad_inches=.02)
+    plt.close(fig)
 
     fig = plt.figure("x", figsize=(7.68, 4.8))
     plt.imshow(
