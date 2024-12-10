@@ -20,8 +20,11 @@ def get_seismic_dataset():
 
     # Download the dataset into the data directory if it does not exist
     if not os.path.isfile(data_path):
-        os.system("wget https://www.dropbox.com/s/53u8ckb9aje8xv4/"
-                  "training-pairs.h5 --no-check-certificate -O" + data_path)
+        os.system(
+            f"wget 'https://www.dropbox.com/scl/fi/0dmnhlxk4jso10gr3oua9/training-pairs.h5?rlkey=2sdyqgs79jqoc7vjh1qrcnwx7&st=nni5cf4p&dl=0' "
+            f"--no-check-certificate -O {data_path}"
+        )
+
 
     # Load seismic images and create training and testing data
     file = h5py.File(data_path, 'r')
